@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
-
+#include "lexer/lexer.h"
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
@@ -35,11 +35,11 @@ public:
 };
 
 class BinaryExprAST : public ExprAST {
-    char op;
+    lexer::Token op;
     std::unique_ptr<ExprAST> lhs, rhs;
 public:
-    BinaryExprAST(char op, std::unique_ptr<ExprAST> lhs, std::unique_ptr<ExprAST> rhs) :
-            op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+    BinaryExprAST(lexer::Token op, std::unique_ptr<ExprAST> lhs, std::unique_ptr<ExprAST> rhs) :
+            op(std::move(op)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 };
 
 class CallExprAST : public ExprAST {
@@ -51,7 +51,7 @@ public:
             : callee(std::move(Callee)), args(std::move(Args)) {}
 };
 
-class PrototypeAST {
+class PrototypeAST:public ExprAST {
     std::string Name;
     std::vector<std::string> Args;
 
@@ -62,7 +62,7 @@ public:
     [[nodiscard]] const std::string &getName() const { return Name; }
 };
 
-class FunctionAST {
+class FunctionAST :public ExprAST{
     std::unique_ptr<PrototypeAST> Proto;
     std::unique_ptr<ExprAST> Body;
 
@@ -71,6 +71,7 @@ public:
                 std::unique_ptr<ExprAST> Body)
             : Proto(std::move(Proto)), Body(std::move(Body)) {}
 };
+
 
 
 #endif //DUST_AST_H

@@ -2,27 +2,40 @@
 // Created by delta on 12/03/2024.
 //
 
-#include "ast/ast.h"
-#include "lexer/lexer.h"
-#include "minilog.h"
+
+#include "parser/parser.h"
 
 extern std::vector<lexer::Token> tokens;
 extern lexer::Token curTok;
+extern std::map<lexer::TokenId, int> BinOpPrecedence;
 
 extern void getNextToken();
 
 namespace parser{
-    using uexpr = std::unique_ptr<ExprAST>;
+    using namespace minilog;
     
-    uexpr parse() {
-        curTok = tokens[0];
-        while (curTok.tok != lexer::EOF_TK) {
-            if (curTok.tok == lexer::FN_TK) {
-            }
-        }
+    bool isBinOperator(const lexer::Token &tk) {
+        return tk.tok == lexer::ADD_TK ||
+               tk.tok == lexer::SUB_TK ||
+               tk.tok == lexer::MUL_TK ||
+               tk.tok == lexer::DIV_TK;
     }
     
-    uexpr parseExpression();
+    int getTokPrecedence() {
+        if (isBinOperator(curTok))
+            return BinOpPrecedence[curTok.tok];
+        else return -1;
+    }
+    
+    uexpr ParseAll() {
+        while (curTok.tok != lexer::EOF_TK) {
+            if (curTok.tok == lexer::FN_TK) {
+                parseFuncDef();
+                std::cout << "function definition\n";
+            }
+        }
+        return nullptr;
+    }
     
     uexpr parseNumberExpr() {
         auto ret = std::make_unique<NumberExprAST>(std::stod(curTok.val));
@@ -34,6 +47,7 @@ namespace parser{
         std::string name = curTok.val;
         getNextToken();//pass name
         if (curTok.tok != lexer::LPAR_TK) {
+            log_info("ident expr");
             return std::make_unique<VariableExprAST>(name);
         }
         getNextToken();//pass (
@@ -43,11 +57,19 @@ namespace parser{
                 args.push_back(std::move(Arg));
             else
                 return nullptr;
-            if (curTok.tok == lexer::COMMA_TK)
-                getNextToken();//pass ,
+            if (curTok.tok != lexer::COMMA_TK) {
+                if (curTok.tok == lexer::RPAR_TK) {
+                    break;
+                } else {
+                    minilog::log_fatal("expect , or )");
+                    std::exit(1);
+                }
+            }
+            getNextToken();//pass ,
         }
         getNextToken();//pass )
-        return std::make_unique<CallExprAST>(name,std::move(args));
+        log_info("func call expr");
+        return std::make_unique<CallExprAST>(name, std::move(args));
     }
     
     uexpr parseParenthesisExpr() {
@@ -64,20 +86,108 @@ namespace parser{
         return v;
     }
     
-    uexpr parseStringExpr(){
-        auto v=std::make_unique<StringExprAST>(curTok.val);
+    uexpr parseStringExpr() {
+        auto v = std::make_unique<StringExprAST>(curTok.val);
         getNextToken();//pass string literal
         return v;
     }
     
-    uexpr parseExpression(){
-        if(curTok.tok==lexer::IDENT_TK){
-            parseIdentifierExpr();
-        }else if(curTok.tok==lexer::NUMLIT_TK){
-            parseNumberExpr();
-        }else if(curTok.tok==lexer::STR_TK){
-            parseStringExpr();
+    uexpr parsePrimary() {
+        if (curTok.tok == lexer::IDENT_TK) {
+            
+            return parseIdentifierExpr();
+        } else if (curTok.tok == lexer::NUMLIT_TK) {
+            log_info("num literal expr");
+            return parseNumberExpr();
+        } else if (curTok.tok == lexer::STR_TK) {
+            log_info("string expr");
+            return parseStringExpr();
+        } else if (curTok.tok == lexer::LPAR_TK) {
+            log_info("() expr");
+            return parseParenthesisExpr();
         }
+        return nullptr;
+    }
+    
+    uexpr parseExpression() {
+        
+        auto l = parsePrimary();
+        if (!l) { return nullptr; }
+        return parseBinOpExpression(0, std::move(l));
+    }
+    
+    uexpr parseBinOpExpression(int exprPrec, uexpr lhs) {
+        while (true) {
+            int tokPrec = getTokPrecedence();
+            if (tokPrec < exprPrec) {
+                return lhs;
+            }
+            auto op = curTok;
+            getNextToken();//pass bin op
+            auto rhs = parseExpression();
+            lhs = std::make_unique<BinaryExprAST>(op, std::move(lhs), std::move(rhs));
+        }
+    }
+    
+    std::unique_ptr<PrototypeAST> parseFuncDecl() {
+        
+        std::string fnName = curTok.val;
+        if (curTok.tok != lexer::IDENT_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass name
+        if (curTok.tok != lexer::LPAR_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass (
+        std::vector<std::string> argNames;
+        while (curTok.tok != lexer::RPAR_TK) {
+            argNames.push_back(curTok.val);
+            if (curTok.tok != lexer::IDENT_TK) {
+                log_fatal("fatal");
+                std::exit(1);
+            }
+            getNextToken();//pass arg name
+            if (curTok.tok == lexer::RPAR_TK) {
+                break;
+            }
+            if (curTok.tok != lexer::COMMA_TK) {
+                log_fatal("fatal");
+                std::exit(1);
+            }
+            getNextToken();//pass ,
+        }
+        if (curTok.tok != lexer::RPAR_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass )
+        minilog::log_info("parsing func decl");
+        return std::make_unique<PrototypeAST>(fnName, argNames);
+    }
+    
+    std::unique_ptr<FunctionAST> parseFuncDef() {
+        if (curTok.tok != lexer::FN_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass fn
+        auto signature = parseFuncDecl();
+        if (curTok.tok != lexer::LBRACE_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass {
+        auto def = parseExpression();
+        if (curTok.tok != lexer::RBRACE_TK) {
+            log_fatal("fatal");
+            std::exit(1);
+        }
+        getNextToken();//pass }
+        minilog::log_info("parsing func def");
+        return std::make_unique<FunctionAST>(std::move(signature), std::move(def));
     }
     
 }

@@ -10,4 +10,5 @@ add_executable(dust src/main.cpp
         include/lexer/lexer.h
         include/minilog.h
         src/parser/parser.cc
-        include/ast/ast.h)
+        include/ast/ast.h
+        include/parser/parser.h)
