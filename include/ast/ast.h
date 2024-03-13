@@ -18,11 +18,20 @@ public:
 class NumberExprAST : public ExprAST {
     double val;
 public:
-    NumberExprAST(double v) : val(v) {}
+   explicit NumberExprAST(double v) : val(v) {}
 };
+
+class StringExprAST : public ExprAST {
+    std::string val;
+public:
+    explicit StringExprAST(std::string v) : val(std::move(v)) {}
+};
+
 
 class VariableExprAST : public ExprAST {
     std::string name;
+public:
+   explicit VariableExprAST(std::string name):name(std::move(name)){}
 };
 
 class BinaryExprAST : public ExprAST {

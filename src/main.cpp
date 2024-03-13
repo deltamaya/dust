@@ -21,7 +21,6 @@ int main(int argc,char**argv) {
                 std::cout<<tk.val<<std::endl;
             }
         }
-        curTok=tokens.front();
     }
     return 0;
 }
