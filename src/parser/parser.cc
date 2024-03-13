@@ -5,6 +5,7 @@
 
 #include "parser/parser.h"
 
+
 extern std::vector<lexer::Token> tokens;
 extern lexer::Token curTok;
 extern std::map<lexer::TokenId, int> BinOpPrecedence;
@@ -40,6 +41,7 @@ namespace parser{
     uexpr parseNumberExpr() {
         auto ret = std::make_unique<NumberExprAST>(std::stod(curTok.val));
         getNextToken();
+        log_info("num literal expr");
         return ret;
     }
     
@@ -83,12 +85,14 @@ namespace parser{
             std::exit(-1);
         }
         getNextToken();//pass ')'
+        log_info("() expr");
         return v;
     }
     
     uexpr parseStringExpr() {
         auto v = std::make_unique<StringExprAST>(curTok.val);
         getNextToken();//pass string literal
+        log_info("string expr");
         return v;
     }
     
@@ -97,13 +101,13 @@ namespace parser{
             
             return parseIdentifierExpr();
         } else if (curTok.tok == lexer::NUMLIT_TK) {
-            log_info("num literal expr");
+            
             return parseNumberExpr();
         } else if (curTok.tok == lexer::STR_TK) {
-            log_info("string expr");
+            
             return parseStringExpr();
         } else if (curTok.tok == lexer::LPAR_TK) {
-            log_info("() expr");
+            
             return parseParenthesisExpr();
         }
         return nullptr;

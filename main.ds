@@ -5,3 +5,7 @@ fn fib(x){
 fn main(){
     "123"
 }
+
+fn calc(x,y){
+    1+2*(3+4)/5
+}

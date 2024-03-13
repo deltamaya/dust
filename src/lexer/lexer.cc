@@ -62,7 +62,9 @@ namespace lexer{
             return {RBRACE_TK, ""};
         } else if (str == ":") {
             return {COLON_TK, ""};
-        }else if (str == ";") {
+        }else if (str == ",") {
+            return {COMMA_TK, ""};
+        } else if (str == ";") {
             return {SEMICON_TK, ""};
         } else if (str == "+") {
             return {ADD_TK, ""};
