@@ -4,6 +4,7 @@
 
 #ifndef DUST_LEXER_H
 #define DUST_LEXER_H
+
 #include <vector>
 #include<fstream>
 
@@ -12,7 +13,7 @@ namespace lexer{
 f(EOF_TK)           \
     f(FN_TK)\
     f(IDENT_TK)\
-    f(I32_TK)\
+    f(NUM_TK)\
     f(LPAR_TK)\
     f(RPAR_TK)\
     f(LBRACE_TK)\
@@ -41,27 +42,32 @@ f(EOF_TK)           \
     f(NOT_TK)\
     f(DOT_TK)\
     f(COMMA_TK)\
-    f(INTEGER_TK)\
-
-    enum TokenId{
+    f(NUMLIT_TK)        \
+f(SEMICON_TK)            \
+    f(STR_TK)
+    
+    enum TokenId {
 #define _Function(name) name,
         _FOR_EACH(_Function)
 #undef _Function
     };
-    inline std::string to_string(TokenId id){
+    
+    inline std::string to_string(TokenId id) {
         #define _Function(name) case name: \
     return #name;
-        switch(id){
+        switch (id) {
             _FOR_EACH(_Function)
             default:
                 return "unknown";
         }
         #undef _Function
     }
-    struct Token{
+    
+    struct Token {
         TokenId tok;
         std::string val;
     };
-    std::vector<Token> lex(std::ifstream& source);
+    
+    std::vector<Token> lex(std::ifstream &source);
 }
 #endif //DUST_LEXER_H

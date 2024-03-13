@@ -1,7 +1,15 @@
-fn fib(x:i32)i32{
+fn fib(x:num)num{
+    println("fib");
     if x<3{
         1
     }else{
         fib(x-1)+fib(x-2)
     }
+}
+
+fn main(){
+    5;
+    1.345;
+    1.34.5;
+    fib(5);
 }

@@ -8,4 +8,6 @@ include_directories("include/")
 add_executable(dust src/main.cpp
         src/lexer/lexer.cc
         include/lexer/lexer.h
-        include/minilog.h)
+        include/minilog.h
+        src/parser/parser.cc
+        include/ast/ast.h)
