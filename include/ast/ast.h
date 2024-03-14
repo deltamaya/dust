@@ -27,7 +27,7 @@
 static llvm::LLVMContext TheContext;
 
 static llvm::IRBuilder<> Builder{TheContext};
-static std::unique_ptr<llvm::Module> TheModule;
+static llvm::Module TheModule{"TheModule",TheContext};
 static std::map<std::string, llvm::Value *> NamedValues;
 
 class ExprAST {
@@ -127,7 +127,7 @@ public:
 
 inline llvm::Value *CallExprAST::codegen() {
     // Look up the name in the global module table.
-    llvm::Function *CalleeF = TheModule->getFunction(callee);
+    llvm::Function *CalleeF = TheModule.getFunction(callee);
     if (!CalleeF) {
         minilog::log_error("Unknown function name: {}", callee);
         return nullptr;
@@ -170,7 +170,7 @@ inline llvm::Function *PrototypeAST::codegen() {
             llvm::FunctionType::get(llvm::Type::getDoubleTy(TheContext), Doubles, false);
     
     llvm::Function *F =
-            llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
+            llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, &TheModule);
     // Set names for all arguments.
     unsigned Idx = 0;
     for (auto &Arg: F->args())
@@ -194,15 +194,16 @@ public:
 inline llvm::Function *FunctionAST::codegen() {
     minilog::log_info("function code gen: {}", Proto->getName());
     // First, check for an existing function from a previous 'extern' declaration.
-    llvm::Function *TheFunction = TheModule->getFunction(Proto->getName());//CRASH
+    llvm::Function *TheFunction = TheModule.getFunction(Proto->getName());
+    
     minilog::log_info("get name from module");
     if (!TheFunction) {
-        minilog::log_info("not a extern function definition");
+        minilog::log_info("doesn't contain such function prototype: {}",Proto->getName());
         TheFunction = Proto->codegen();
     }
     
     if (!TheFunction) {
-        minilog::log_error("generate prototype error");
+        minilog::log_error("prototype codegen error");
         return nullptr;
     }
     

@@ -121,12 +121,24 @@ namespace parser{
     uexpr parseBinOpExpression(int exprPrec, uexpr lhs) {
         while (true) {
             int tokPrec = getTokPrecedence();
+            minilog::log_debug("tok {} precedence: {}",lexer::to_string(curTok.tok),tokPrec);
             if (tokPrec < exprPrec) {
                 return lhs;
             }
             auto op = curTok;
             getNextToken();//pass bin op
-            auto rhs = parseExpression();
+            auto rhs = parsePrimary();
+            if(!rhs){
+                return nullptr;
+            }
+            int nextPrec = getTokPrecedence();
+            // if the next operator is prior,
+            // let the current rhs expr bind with the next operator as its lhs
+            if (tokPrec < nextPrec) {
+                rhs = parseBinOpExpression(tokPrec + 1, std::move(rhs));
+                if (!rhs)
+                    return nullptr;
+            }
             lhs = std::make_unique<BinaryExprAST>(op, std::move(lhs), std::move(rhs));
         }
     }

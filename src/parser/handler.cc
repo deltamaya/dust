@@ -6,7 +6,7 @@
 
 namespace parser{
     void HandleFuncDef() {
-        minilog::log_error("handle func def");
+        minilog::log_info("handle func def");
         if (auto fnAST = parseFuncDef()) {
             
             if (auto *fnIR = fnAST->codegen()) {
@@ -14,10 +14,10 @@ namespace parser{
                 fnIR->print(llvm::errs());
                 fprintf(stdout, "\n");
             }
-            minilog::log_error("handle func def done");
+            minilog::log_info("handle func def done");
             
         } else {
-            minilog::log_error("error with func def");
+            minilog::log_info("error with func def");
             getNextToken();//skip token for error recovery
         }
         
@@ -35,22 +35,23 @@ namespace parser{
             }
         } else {
             // Skip token for error recovery.
-            minilog::log_error("error with top level expr");
+            minilog::log_info("error with top level expr");
             getNextToken();
         }
     }
     
     void HandleExtern() {
-        minilog::log_error("handle extern");
+        minilog::log_info("handle extern");
         if (auto proto = parseExtern()) {
             if (auto *protoIR = proto->codegen()) {
                 fprintf(stdout, "Read top-level expression:");
                 protoIR->print(llvm::errs());
                 fprintf(stdout, "\n");
             }
-            minilog::log_error("handle extern done");
+            TheModule.print(llvm::errs(),nullptr);
+            minilog::log_info("handle extern done");
         } else {
-            minilog::log_error("error with extern");
+            minilog::log_info("error with extern");
             getNextToken();
         }
     }

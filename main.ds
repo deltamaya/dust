@@ -1,9 +1,11 @@
 extern calc(x,y)
+fn calc(x,y){
+    1+x*y+4/5
+}
+
 fn fib(x){
     x
 }
 calc(123,11);
-fn calc(x,y){
-    1+2*(3+4)/5
-}
+
 calc(123,345);
