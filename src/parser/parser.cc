@@ -6,11 +6,6 @@
 #include "parser/parser.h"
 
 
-extern std::vector<lexer::Token> tokens;
-extern lexer::Token curTok;
-extern std::map<lexer::TokenId, int> BinOpPrecedence;
-
-extern void getNextToken();
 
 namespace parser{
     using namespace minilog;
@@ -27,15 +22,22 @@ namespace parser{
             return BinOpPrecedence[curTok.tok];
         else return -1;
     }
-    
-    uexpr ParseAll() {
+    uexpr MainLoop() {
         while (curTok.tok != lexer::EOF_TK) {
             if (curTok.tok == lexer::FN_TK) {
-                parseFuncDef();
-                std::cout << "function definition\n";
+                HandleFuncDef();
+            }else if(curTok.tok==lexer::EXTERN_TK){
+                HandleExtern();
+            }else{
+                HandleTopLevelExpr();
             }
         }
         return nullptr;
+    }
+    
+    std::unique_ptr<PrototypeAST> parseExtern() {
+        getNextToken();//pass extern
+        return parseFuncDecl();
     }
     
     uexpr parseNumberExpr() {
@@ -98,16 +100,12 @@ namespace parser{
     
     uexpr parsePrimary() {
         if (curTok.tok == lexer::IDENT_TK) {
-            
             return parseIdentifierExpr();
         } else if (curTok.tok == lexer::NUMLIT_TK) {
-            
             return parseNumberExpr();
         } else if (curTok.tok == lexer::STR_TK) {
-            
             return parseStringExpr();
         } else if (curTok.tok == lexer::LPAR_TK) {
-            
             return parseParenthesisExpr();
         }
         return nullptr;
@@ -131,6 +129,15 @@ namespace parser{
             auto rhs = parseExpression();
             lhs = std::make_unique<BinaryExprAST>(op, std::move(lhs), std::move(rhs));
         }
+    }
+    
+    std::unique_ptr<FunctionAST> parseTopLevelExpr() {
+        if (auto e = parseExpression()) {
+            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
+            getNextToken();//pass ;
+            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
+        }
+        return nullptr;
     }
     
     std::unique_ptr<PrototypeAST> parseFuncDecl() {
@@ -168,7 +175,7 @@ namespace parser{
             std::exit(1);
         }
         getNextToken();//pass )
-        minilog::log_info("parsing func decl");
+        minilog::log_info("parsed func decl");
         return std::make_unique<PrototypeAST>(fnName, argNames);
     }
     
@@ -190,7 +197,7 @@ namespace parser{
             std::exit(1);
         }
         getNextToken();//pass }
-        minilog::log_info("parsing func def");
+        minilog::log_info("parsed func def");
         return std::make_unique<FunctionAST>(std::move(signature), std::move(def));
     }
     

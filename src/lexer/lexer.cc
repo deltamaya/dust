@@ -48,7 +48,9 @@ namespace lexer{
             return {IF_TK, ""};
         } else if (str == "else") {
             return {ELSE_TK, ""};
-        } else if (str == "(") {
+        } else if (str == "extern") {
+            return {EXTERN_TK, ""};
+        }else if (str == "(") {
             return {LPAR_TK, ""};
         } else if (str == ")") {
             return {RPAR_TK, ""};

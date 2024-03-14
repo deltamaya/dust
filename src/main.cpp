@@ -35,7 +35,7 @@ int main(int argc,char**argv) {
                 std::cout<<tk.val<<std::endl;
             }
         }
-        parser::ParseAll();
+        parser::MainLoop();
     }
     return 0;
 }

@@ -1,11 +1,9 @@
+extern calc(x,y)
 fn fib(x){
     x
 }
-
-fn main(){
-    "123"
-}
-
+calc(123,11);
 fn calc(x,y){
     1+2*(3+4)/5
 }
+calc(123,345);

@@ -21,6 +21,14 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include <map>
+#include "minilog.h"
+
+static llvm::LLVMContext TheContext;
+
+static llvm::IRBuilder<> Builder{TheContext};
+static std::unique_ptr<llvm::Module> TheModule;
+static std::map<std::string, llvm::Value *> NamedValues;
 
 class ExprAST {
 public:
@@ -29,22 +37,16 @@ public:
     virtual llvm::Value *codegen() = 0;
 };
 
-static std::unique_ptr<llvm::LLVMContext> TheContext;
-
-static std::unique_ptr<llvm::IRBuilder<>> Builder;//this is buggy
-static std::unique_ptr<llvm::Module> TheModule;
-static std::map<std::string, llvm::Value *> NamedValues;
-
 class NumberExprAST : public ExprAST {
     double val;
 public:
     explicit NumberExprAST(double v) : val(v) {}
     
-    llvm::Value *codegen() override;
+    inline llvm::Value *codegen() override;
 };
 
-llvm::Value *NumberExprAST::codegen() {
-    return llvm::ConstantFP::get(*TheContext, llvm::APFloat(val));
+inline llvm::Value *NumberExprAST::codegen() {
+    return llvm::ConstantFP::get(TheContext, llvm::APFloat(val));
 }
 
 class StringExprAST : public ExprAST {
@@ -52,8 +54,16 @@ class StringExprAST : public ExprAST {
 public:
     explicit StringExprAST(std::string v) : val(std::move(v)) {}
     
-    llvm::Value *codegen() override;
+    inline llvm::Value *codegen() override;
 };
+
+inline llvm::Value *StringExprAST::codegen() {
+    // Look this variable up in the function.
+//    llvm::StringLiteral s(llvm::StringRef(val));
+//    if (!s)
+//        return nullptr;
+    return nullptr;
+}
 
 
 class VariableExprAST : public ExprAST {
@@ -61,14 +71,16 @@ class VariableExprAST : public ExprAST {
 public:
     explicit VariableExprAST(std::string name) : name(std::move(name)) {}
     
-    llvm::Value *codegen() override;
+    inline llvm::Value *codegen() override;
 };
 
-llvm::Value *VariableExprAST::codegen() {
+inline llvm::Value *VariableExprAST::codegen() {
     // Look this variable up in the function.
     llvm::Value *V = NamedValues[name];
-    if (!V)
+    if (!V) {
+        minilog::log_error("Unknown variable name: {}", name);
         return nullptr;
+    }
     return V;
 }
 
@@ -79,10 +91,10 @@ public:
     BinaryExprAST(lexer::Token op, std::unique_ptr<ExprAST> lhs, std::unique_ptr<ExprAST> rhs) :
             op(std::move(op)), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
     
-    llvm::Value *codegen() override;
+    inline llvm::Value *codegen() override;
 };
 
-llvm::Value *BinaryExprAST::codegen() {
+inline llvm::Value *BinaryExprAST::codegen() {
     llvm::Value *L = lhs->codegen();
     llvm::Value *R = rhs->codegen();
     if (!L || !R)
@@ -90,13 +102,13 @@ llvm::Value *BinaryExprAST::codegen() {
     
     switch (op.tok) {
         case lexer::ADD_TK:
-            return Builder->CreateFAdd(L, R, "addtmp");
+            return Builder.CreateFAdd(L, R, "addtmp");
         case lexer::SUB_TK:
-            return Builder->CreateFSub(L, R, "subtmp");
+            return Builder.CreateFSub(L, R, "subtmp");
         case lexer::MUL_TK:
-            return Builder->CreateFMul(L, R, "multmp");
+            return Builder.CreateFMul(L, R, "multmp");
         case lexer::DIV_TK:
-            return Builder->CreateFDiv(L, R, "divtmp");
+            return Builder.CreateFDiv(L, R, "divtmp");
         default:
             return nullptr;
     }
@@ -110,18 +122,22 @@ public:
                 std::vector<std::unique_ptr<ExprAST>> Args)
             : callee(std::move(Callee)), args(std::move(Args)) {}
     
-    llvm::Value *codegen() override;
+    inline llvm::Value *codegen() override;
 };
 
-llvm::Value *CallExprAST::codegen() {
+inline llvm::Value *CallExprAST::codegen() {
     // Look up the name in the global module table.
     llvm::Function *CalleeF = TheModule->getFunction(callee);
-    if (!CalleeF)
+    if (!CalleeF) {
+        minilog::log_error("Unknown function name: {}", callee);
         return nullptr;
+    }
     
     // If argument mismatch error.
-    if (CalleeF->arg_size() != args.size())
+    if (CalleeF->arg_size() != args.size()) {
+        minilog::log_error("arguments mismatch");
         return nullptr;
+    }
     
     std::vector<llvm::Value *> ArgsV;
     for (const auto &arg: args) {
@@ -130,7 +146,7 @@ llvm::Value *CallExprAST::codegen() {
             return nullptr;
     }
     
-    return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
+    return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
 class PrototypeAST : public ExprAST {
@@ -141,17 +157,17 @@ public:
     PrototypeAST(std::string Name, std::vector<std::string> Args)
             : Name(std::move(Name)), Args(std::move(Args)) {}
     
-    [[nodiscard]] const std::string &getName() const { return Name; }
+    [[nodiscard]] std::string const &getName() { return Name; }
     
-    llvm::Function *codegen() override;
+    inline llvm::Function *codegen() override;
 };
 
-llvm::Function *PrototypeAST::codegen() {
+inline llvm::Function *PrototypeAST::codegen() {
     // Make the function type:  double(double,double) etc.
     std::vector<llvm::Type *> Doubles(Args.size(),
-                                      llvm::Type::getDoubleTy(*TheContext));
+                                      llvm::Type::getDoubleTy(TheContext));
     llvm::FunctionType *FT =
-            llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
+            llvm::FunctionType::get(llvm::Type::getDoubleTy(TheContext), Doubles, false);
     
     llvm::Function *F =
             llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
@@ -159,7 +175,7 @@ llvm::Function *PrototypeAST::codegen() {
     unsigned Idx = 0;
     for (auto &Arg: F->args())
         Arg.setName(Args[Idx++]);
-    
+    minilog::log_info("add function declaration done: {}", Name);
     return F;
 }
 
@@ -172,24 +188,30 @@ public:
                 std::unique_ptr<ExprAST> Body)
             : Proto(std::move(Proto)), Body(std::move(Body)) {}
     
-    llvm::Function *codegen() override;
+    inline llvm::Function *codegen() override;
 };
 
-llvm::Function *FunctionAST::codegen() {
+inline llvm::Function *FunctionAST::codegen() {
+    minilog::log_info("function code gen: {}", Proto->getName());
     // First, check for an existing function from a previous 'extern' declaration.
-    llvm::Function *TheFunction = TheModule->getFunction(Proto->getName());
-    
-    if (!TheFunction)
+    llvm::Function *TheFunction = TheModule->getFunction(Proto->getName());//CRASH
+    minilog::log_info("get name from module");
+    if (!TheFunction) {
+        minilog::log_info("not a extern function definition");
         TheFunction = Proto->codegen();
+    }
     
-    if (!TheFunction)
+    if (!TheFunction) {
+        minilog::log_error("generate prototype error");
         return nullptr;
+    }
     
     if (!TheFunction->empty())
         return (llvm::Function *) nullptr;
     // Create a new basic block to start insertion into.
-    llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
-    Builder->SetInsertPoint(BB);
+    minilog::log_info("generating function definition");
+    llvm::BasicBlock *BB = llvm::BasicBlock::Create(TheContext, "entry", TheFunction);
+    Builder.SetInsertPoint(BB);
 
 // Record the function arguments in the NamedValues map.
     NamedValues.clear();
@@ -197,13 +219,14 @@ llvm::Function *FunctionAST::codegen() {
         NamedValues[std::string(Arg.getName())] = &Arg;
     if (llvm::Value *RetVal = Body->codegen()) {
         // Finish off the function.
-        Builder->CreateRet(RetVal);
+        Builder.CreateRet(RetVal);
         
         // Validate the generated code, checking for consistency.
         verifyFunction(*TheFunction);
-        
+        minilog::log_info("create function done");
         return TheFunction;
     }
+    minilog::log_error("create function error");
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
     return nullptr;
