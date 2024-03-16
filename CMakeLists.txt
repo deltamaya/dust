@@ -11,18 +11,21 @@ include_directories("include/"
 link_directories("E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\lib")
 
 find_package(LLVM 18.1.0 REQUIRED)
-llvm_map_components_to_libnames(
-        LLVM_LIBRARIES
-        Core
-        Support
-)
-add_executable(dust src/main.cpp
+
+add_executable("dust" src/main.cpp
         src/lexer/lexer.cc
         src/parser/parser.cc
         src/parser/handler.cc
+        src/parser/initializer.cc
+        include/jit/dustjit.h
 )
+execute_process(COMMAND E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\bin\\llvm-config.exe --libs all
+        OUTPUT_VARIABLE llvm_libraries)
+string(STRIP ${llvm_libraries} llvm_clean)
+string(REPLACE "E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\lib\\" "" llvm_clean ${llvm_clean} )
+message(WARNING ${llvm_clean})
+message(WARNING ${llvm_libraries})
 target_link_options(dust PRIVATE "/MD")
 target_compile_options(dust PRIVATE "/MD")
 target_include_directories(dust PRIVATE ${LLVM_INCLUDE_DIRS})
-target_compile_definitions(dust PRIVATE ${LLVM_DEFINITIONS})
-target_link_libraries(dust PRIVATE ${LLVM_LIBRARIES})
+target_link_libraries(dust PRIVATE ${llvm_clean} Ws2_32.lib)

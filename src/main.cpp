@@ -22,11 +22,14 @@ void getNextToken(){
     }
 }
 int main(int argc,char**argv) {
-    if(argc<2){
-        std::cout<<"you need to specify source file\n";
-        std::exit(0);
-    }else{
-        std::ifstream source{argv[1]};
+//    if(argc<2){
+//        std::cout<<"you need to specify source file\n";
+//        std::exit(0);
+//    }else{
+        llvm::InitializeNativeTarget();
+        llvm::InitializeNativeTargetAsmPrinter();
+        llvm::InitializeNativeTargetAsmParser();
+        std::ifstream source{"main.ds"};
         tokens=lexer::lex(source);
         curTok=tokens[0];
         for(auto&tk:tokens){
@@ -36,6 +39,6 @@ int main(int argc,char**argv) {
             }
         }
         parser::MainLoop();
-    }
+//    }
     return 0;
 }
