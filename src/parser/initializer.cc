@@ -5,23 +5,24 @@
 #include "ast/ast.h"
 #include "jit/dustjit.h"
 
- std::unique_ptr<llvm::LLVMContext> TheContext;
-std::unique_ptr<llvm::IRBuilder<>> Builder=std::make_unique<llvm::IRBuilder<>>(*TheContext);
-std::unique_ptr<llvm::Module> TheModule=std::make_unique<llvm::Module>("MainModule",*TheContext);
- std::map<std::string, llvm::Value *> NamedValues;
- std::unique_ptr<DustJIT> TheJIT;
- std::unique_ptr<llvm::FunctionPassManager> TheFPM;
- std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
- std::unique_ptr<llvm::FunctionAnalysisManager> TheFAM;
- std::unique_ptr<llvm::CGSCCAnalysisManager> TheCGAM;
- std::unique_ptr<llvm::ModuleAnalysisManager> TheMAM;
- std::unique_ptr<llvm::PassInstrumentationCallbacks> ThePIC;
- std::unique_ptr<llvm::StandardInstrumentations> TheSI;
- std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
- llvm::ExitOnError ExitOnErr;
-void InitModuleAndManagers(){
+std::unique_ptr<llvm::LLVMContext> TheContext;
+std::unique_ptr<llvm::IRBuilder<>> Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
+std::unique_ptr<llvm::Module> TheModule = std::make_unique<llvm::Module>("MainModule", *TheContext);
+std::map<std::string, llvm::Value *> NamedValues;
+std::unique_ptr<DustJIT> TheJIT;
+std::unique_ptr<llvm::FunctionPassManager> TheFPM;
+std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
+std::unique_ptr<llvm::FunctionAnalysisManager> TheFAM;
+std::unique_ptr<llvm::CGSCCAnalysisManager> TheCGAM;
+std::unique_ptr<llvm::ModuleAnalysisManager> TheMAM;
+std::unique_ptr<llvm::PassInstrumentationCallbacks> ThePIC;
+std::unique_ptr<llvm::StandardInstrumentations> TheSI;
+std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+llvm::ExitOnError ExitOnErr;
+
+void InitModuleAndManagers() {
     // Open a new context and module.
-    TheContext =std::move(std::make_unique<llvm::LLVMContext>());
+    TheContext = std::move(std::make_unique<llvm::LLVMContext>());
     TheModule = std::make_unique<llvm::Module>("DustJIT", *TheContext);
     TheModule->setDataLayout(TheJIT->getDataLayout());
     
@@ -34,7 +35,7 @@ void InitModuleAndManagers(){
     TheFAM = std::make_unique<llvm::FunctionAnalysisManager>();
     TheCGAM = std::make_unique<llvm::CGSCCAnalysisManager>();
     TheMAM = std::make_unique<llvm::ModuleAnalysisManager>();
-    ThePIC = std::make_unique<llvm::PassInstrumentationCallbacks>(  );
+    ThePIC = std::make_unique<llvm::PassInstrumentationCallbacks>();
     TheSI = std::make_unique<llvm::StandardInstrumentations>(*TheContext,
             /*DebugLogging*/ true);
     TheSI->registerCallbacks(*ThePIC, TheMAM.get());
@@ -51,5 +52,5 @@ void InitModuleAndManagers(){
     PB.registerModuleAnalyses(*TheMAM);
     PB.registerFunctionAnalyses(*TheFAM);
     PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
-
+    
 }
