@@ -60,10 +60,10 @@ public:
             ES->reportError(std::move(Err));
     }
     
-    static llvm::Expected<std::unique_ptr<DustJIT>> Create() {
+    static std::unique_ptr<DustJIT> Create() {
         auto EPC = SelfExecutorProcessControl::Create();
         if (!EPC)
-            return EPC.takeError();
+            return nullptr;
         
         auto ES = std::make_unique<ExecutionSession>(std::move(*EPC));
         
@@ -72,7 +72,7 @@ public:
         
         auto DL = JTMB.getDefaultDataLayoutForTarget();
         if (!DL)
-            return DL.takeError();
+            return nullptr;
         
         return std::make_unique<DustJIT>(std::move(ES), std::move(JTMB),
                                          std::move(*DL));

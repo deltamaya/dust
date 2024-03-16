@@ -6,8 +6,8 @@
 #include "jit/dustjit.h"
 
 std::unique_ptr<llvm::LLVMContext> TheContext;
-std::unique_ptr<llvm::IRBuilder<>> Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
-std::unique_ptr<llvm::Module> TheModule = std::make_unique<llvm::Module>("MainModule", *TheContext);
+std::unique_ptr<llvm::IRBuilder<>> Builder ;
+std::unique_ptr<llvm::Module> TheModule;
 std::map<std::string, llvm::Value *> NamedValues;
 std::unique_ptr<DustJIT> TheJIT;
 std::unique_ptr<llvm::FunctionPassManager> TheFPM;
@@ -22,7 +22,7 @@ llvm::ExitOnError ExitOnErr;
 
 void InitModuleAndManagers() {
     // Open a new context and module.
-    TheContext = std::move(std::make_unique<llvm::LLVMContext>());
+    TheContext = std::make_unique<llvm::LLVMContext>();
     TheModule = std::make_unique<llvm::Module>("DustJIT", *TheContext);
     TheModule->setDataLayout(TheJIT->getDataLayout());
     
@@ -39,6 +39,7 @@ void InitModuleAndManagers() {
     TheSI = std::make_unique<llvm::StandardInstrumentations>(*TheContext,
             /*DebugLogging*/ true);
     TheSI->registerCallbacks(*ThePIC, TheMAM.get());
+    
     // Add transform passes.
 // Do simple "peephole" optimizations and bit-twiddling optzns.
     TheFPM->addPass(llvm::InstCombinePass());

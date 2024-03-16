@@ -64,9 +64,9 @@ namespace parser{
         minilog::log_info("handle extern");
         if (auto proto = parseExtern()) {
             if (auto *protoIR = proto->codegen()) {
-                fprintf(stdout, "Read top-level expression:");
+                fprintf(stderr, "Read top-level expression:");
                 protoIR->print(llvm::errs());
-                fprintf(stdout, "\n");
+                fprintf(stderr, "\n");
                 FunctionProtos[proto->getName()] = std::move(proto);
             }
             minilog::log_info("handle extern done");

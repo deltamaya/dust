@@ -18,6 +18,7 @@ add_executable("dust" src/main.cpp
         src/parser/handler.cc
         src/parser/initializer.cc
         include/jit/dustjit.h
+        src/ast.cc
 )
 execute_process(COMMAND E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\bin\\llvm-config.exe --libs all
         OUTPUT_VARIABLE llvm_libraries)

@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
-    std::ifstream source{"main.ds"};
+    std::ifstream source{"../main.ds"};
     tokens = lexer::lex(source);
     curTok = tokens[0];
     for (auto &tk: tokens) {
@@ -40,6 +40,9 @@ int main(int argc, char **argv) {
             std::cout << tk.val << std::endl;
         }
     }
+    TheJIT = std::move(DustJIT::Create());
+    InitModuleAndManagers();
+
     parser::MainLoop();
 //    }
     return 0;

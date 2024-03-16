@@ -1,11 +1,13 @@
-extern calc(x,y)
+
 fn calc(x,y){
-    (1+x)*(y+4)/5
+    x+y/2
 }
 
 fn fib(x){
     x
 }
-calc(123,11);
+calc(1,12);
 
-calc(123,345);
+calc(12,4);
+
+fib(23);

@@ -28,6 +28,8 @@ namespace parser{
                 HandleFuncDef();
             }else if(curTok.tok==lexer::EXTERN_TK){
                 HandleExtern();
+            }else if(curTok.tok==lexer::SEMICON_TK){
+                getNextToken();
             }else{
                 HandleTopLevelExpr();
             }
