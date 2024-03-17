@@ -71,6 +71,7 @@ f(SEMICON_TK)            \
         std::string val;
     };
     
-    std::vector<Token> lex(std::ifstream &source);
+    std::vector<Token> lexFile(std::ifstream&);
+    std::vector<Token>lexLine(const std::string &line);
 }
 #endif //DUST_LEXER_H

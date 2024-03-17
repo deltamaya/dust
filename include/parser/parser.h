@@ -14,9 +14,9 @@
 extern std::vector<lexer::Token> tokens;
 extern lexer::Token curTok;
 extern std::map<lexer::TokenId, int> BinOpPrecedence;
+extern size_t tokIndex ;
 
-
-extern void getNextToken();
+extern std::function<void()> getNextToken;
 
 namespace parser{
     using namespace parser::ast;
@@ -53,10 +53,14 @@ namespace parser{
     
     uexpr MainLoop();
     
-    void HandleFuncDef();
+    void InterpretFuncDef();
     
-    void HandleTopLevelExpr();
+    void InterpretTopLevelExpr();
     
-    void HandleExtern();
+    void InterpretExtern();
+    void CompileFuncDef();
+    void CompileTopLevelExpr();
+    void CompileExtern();
+    int Interpret();
 }
 #endif //DUST_PARSER_H

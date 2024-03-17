@@ -25,13 +25,13 @@ namespace parser{
     uexpr MainLoop() {
         while (curTok.tok != lexer::EOF_TK) {
             if (curTok.tok == lexer::FN_TK) {
-                HandleFuncDef();
+                CompileFuncDef();
             } else if (curTok.tok == lexer::EXTERN_TK) {
-                HandleExtern();
+                CompileExtern();
             } else if (curTok.tok == lexer::SEMICON_TK) {
                 getNextToken();
             } else {
-                HandleTopLevelExpr();
+                CompileTopLevelExpr();
             }
         }
         return nullptr;
@@ -213,6 +213,21 @@ namespace parser{
         getNextToken();//pass }
         minilog::log_info("parsed func def");
         return std::make_unique<FunctionAST>(std::move(signature), std::move(def));
+    }
+    
+    int Interpret(){
+        while(curTok.tok!=lexer::EOF_TK){
+            if (curTok.tok == lexer::FN_TK) {
+                InterpretFuncDef();
+            } else if (curTok.tok == lexer::EXTERN_TK) {
+                InterpretExtern();
+            } else if (curTok.tok == lexer::SEMICON_TK) {
+                getNextToken();
+            } else {
+                InterpretTopLevelExpr();
+            }
+        }
+        return 0;
     }
     
 }

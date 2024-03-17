@@ -116,7 +116,80 @@ namespace lexer{
         }
     }
     
-    std::vector<Token> lex(std::ifstream &source) {
+    std::vector<Token>lexLine(const std::string &line){
+        std::vector<Token> ret;
+        char ch;
+        std::string buf;
+        std::stringstream source{line};
+        auto lexBuf = [&] {
+            ret.push_back(lexString(buf));
+            buf.clear();
+        };
+        while ((ch = source.get()) != -1) {
+            if (!std::isalnum(ch)) {
+                if (!buf.empty()) {
+                    lexBuf();
+                }
+                if (std::isspace(ch)) {
+                    continue;
+                }
+                //lex string literals
+                buf += ch;
+                if (ch == '\"') {
+                    while ((ch = source.get()) != -1) {
+                        buf += ch;
+                        if (ch == '\"') {
+                            lexBuf();
+                            break;
+                        }
+                    }
+                    continue;
+                }
+                // check if it is operators, such as +=, <=, of just +, -, >
+                if (isOperator(ch) || ch == '!') {
+                    char next = source.peek();
+                    if (next == '=') {
+                        source.get();
+                        buf += next;
+                    }
+                    lexBuf();
+                } else if (isBound(ch)) {
+                    lexBuf();
+                }
+            } else if (std::isalpha(ch)) {
+                buf += ch;
+            } else {
+                //lex numbers such as floats or integers
+                buf += ch;
+                if (buf.empty()) {
+                    bool hasdot = false;
+                    while ((ch = source.peek()) != -1) {
+                        if (std::isdigit(ch)) {
+                            source.get();
+                            buf += ch;
+                        } else {
+                            if (ch == '.' && !hasdot) {
+                                buf += ch;
+                                source.get();
+                                hasdot = true;
+                            } else {
+                                lexBuf();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!buf.empty()) {
+            ret.push_back(lexString(buf));
+        }
+
+        return ret;
+    }
+    
+    std::vector<Token> lexFile(std::ifstream &source) {
         std::vector<Token> ret;
         char ch;
         std::string buf;
@@ -187,4 +260,6 @@ namespace lexer{
         ret.push_back({EOF_TK, ""});
         return ret;
     }
+    
+
 }

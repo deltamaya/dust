@@ -1,13 +1,7 @@
-
+extern putchard(ch)
 fn calc(x,y){
-    x+y/2
+    (x+y)/2
 }
 
-fn fib(x){
-    x
-}
-calc(1,12);
-
-calc(12,4);
-
-fib(23);
+calc(12,4)
+putchard(120)
