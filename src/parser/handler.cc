@@ -7,7 +7,7 @@
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 
 namespace parser{
-
+    
     void HandleFuncDef() {
         minilog::log_info("handle func def");
         if (auto fnAST = parseFuncDef()) {
@@ -47,7 +47,8 @@ namespace parser{
                 
                 // Get the symbol's address and cast it to the right type (takes no
                 // arguments, returns a double) so we can call it as a native function.
-                double (*FP)() = ExprSymbol.getAddress().toPtr<double (*)()>();
+                double (*FP)() = ExprSymbol.getAddress().toPtr < double(*)
+                () > ();
                 fprintf(stderr, "Evaluated to %f\n", FP());
                 
                 // Delete the anonymous expression module from the JIT.

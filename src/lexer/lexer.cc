@@ -2,12 +2,13 @@
 // Created by delta on 12/03/2024.
 //
 #include "lexer/lexer.h"
-#include "minilog.h"
+#include "utils/minilog.h"
 #include <cctype>
 
 namespace lexer{
     bool isBound(char ch) {
-        return ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' || ch == ',' || ch == ':'||ch==';';
+        return ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' || ch == ',' || ch == ':' ||
+               ch == ';';
     }
     
     bool isOperator(char id) {
@@ -15,7 +16,7 @@ namespace lexer{
     }
     
     bool isIdent(const std::string &str) {
-        return !std::isdigit(str[0])&&std::ranges::all_of(str,[](char ch){return std::isalnum(ch);});
+        return !std::isdigit(str[0]) && std::ranges::all_of(str, [](char ch) { return std::isalnum(ch); });
     }
     
     bool isNumber(const std::string &str) {
@@ -35,8 +36,8 @@ namespace lexer{
         return true;
     }
     
-    bool isString(const std::string &str){
-        return str.front()=='\"'&&str.back()=='\"';
+    bool isString(const std::string &str) {
+        return str.front() == '\"' && str.back() == '\"';
     }
     
     Token lexString(std::string const &str) {
@@ -50,7 +51,7 @@ namespace lexer{
             return {ELSE_TK, ""};
         } else if (str == "extern") {
             return {EXTERN_TK, ""};
-        }else if (str == "(") {
+        } else if (str == "(") {
             return {LPAR_TK, ""};
         } else if (str == ")") {
             return {RPAR_TK, ""};
@@ -64,7 +65,7 @@ namespace lexer{
             return {RBRACE_TK, ""};
         } else if (str == ":") {
             return {COLON_TK, ""};
-        }else if (str == ",") {
+        } else if (str == ",") {
             return {COMMA_TK, ""};
         } else if (str == ";") {
             return {SEMICON_TK, ""};
@@ -103,7 +104,7 @@ namespace lexer{
         } else if (str == "!") {
             return {NOT_TK, ""};
         } else if (isString(str)) {
-            std::string literal=str.substr(1,str.size()-2);
+            std::string literal = str.substr(1, str.size() - 2);
             return {STR_TK, literal};
         } else if (isIdent(str)) {
             return {IDENT_TK, str};
@@ -119,24 +120,24 @@ namespace lexer{
         std::vector<Token> ret;
         char ch;
         std::string buf;
-        auto lexBuf=[&]{
+        auto lexBuf = [&] {
             ret.push_back(lexString(buf));
             buf.clear();
         };
-        while((ch=source.get())!=-1){
-            if(!std::isalnum(ch)){
-                if(!buf.empty()){
+        while ((ch = source.get()) != -1) {
+            if (!std::isalnum(ch)) {
+                if (!buf.empty()) {
                     lexBuf();
                 }
-                if(std::isspace(ch)){
+                if (std::isspace(ch)) {
                     continue;
                 }
                 //lex string literals
-                buf+=ch;
-                if(ch=='\"'){
-                    while((ch=source.get())!=-1){
-                        buf+=ch;
-                        if(ch=='\"'){
+                buf += ch;
+                if (ch == '\"') {
+                    while ((ch = source.get()) != -1) {
+                        buf += ch;
+                        if (ch == '\"') {
                             lexBuf();
                             break;
                         }
@@ -144,33 +145,33 @@ namespace lexer{
                     continue;
                 }
                 // check if it is operators, such as +=, <=, of just +, -, >
-                if(isOperator(ch)||ch=='!'){
-                    char next=source.peek();
-                    if(next=='='){
+                if (isOperator(ch) || ch == '!') {
+                    char next = source.peek();
+                    if (next == '=') {
                         source.get();
-                        buf+=next;
+                        buf += next;
                     }
                     lexBuf();
-                }else if(isBound(ch)){
+                } else if (isBound(ch)) {
                     lexBuf();
                 }
-            }else if(std::isalpha(ch)){
-                buf+=ch;
-            }else{
+            } else if (std::isalpha(ch)) {
+                buf += ch;
+            } else {
                 //lex numbers such as floats or integers
-                buf+=ch;
-                if(buf.empty()){
-                    bool hasdot=false;
-                    while((ch=source.peek())!=-1){
-                        if(std::isdigit(ch)){
+                buf += ch;
+                if (buf.empty()) {
+                    bool hasdot = false;
+                    while ((ch = source.peek()) != -1) {
+                        if (std::isdigit(ch)) {
                             source.get();
-                            buf+=ch;
-                        }else{
-                            if(ch=='.'&&!hasdot){
-                                buf+=ch;
+                            buf += ch;
+                        } else {
+                            if (ch == '.' && !hasdot) {
+                                buf += ch;
                                 source.get();
-                                hasdot=true;
-                            }else{
+                                hasdot = true;
+                            } else {
                                 lexBuf();
                                 break;
                             }
@@ -179,7 +180,7 @@ namespace lexer{
                 }
             }
         }
-
+        
         if (!buf.empty()) {
             ret.push_back(lexString(buf));
         }

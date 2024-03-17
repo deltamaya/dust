@@ -40,9 +40,8 @@ int main(int argc, char **argv) {
             std::cout << tk.val << std::endl;
         }
     }
-    TheJIT = std::move(DustJIT::Create());
-    InitModuleAndManagers();
-
+    parser::TheJIT = DustJIT::Create();
+    parser::InitModuleAndManagers();
     parser::MainLoop();
 //    }
     return 0;

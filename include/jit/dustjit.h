@@ -40,7 +40,7 @@ private:
 public:
     DustJIT(std::unique_ptr<ExecutionSession> ES,
             JITTargetMachineBuilder JTMB, llvm::DataLayout DL)
-            : ES(std::move(ES)), DL(std::move(DL)), Mangle(*this->ES, this->DL),
+            : ES(std::move(ES)), DL(DL), Mangle(*this->ES, this->DL),
               ObjectLayer(*this->ES,
                           []() { return std::make_unique<llvm::SectionMemoryManager>(); }),
               CompileLayer(*this->ES, ObjectLayer,

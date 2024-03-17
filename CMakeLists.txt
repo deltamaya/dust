@@ -18,14 +18,14 @@ add_executable("dust" src/main.cpp
         src/parser/handler.cc
         src/parser/initializer.cc
         include/jit/dustjit.h
-        src/ast.cc
+        src/ast/ast.cc
 )
 execute_process(COMMAND E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\bin\\llvm-config.exe --libs all
         OUTPUT_VARIABLE llvm_libraries)
 string(STRIP ${llvm_libraries} llvm_clean)
-string(REPLACE "E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\lib\\" "" llvm_clean ${llvm_clean} )
-message(WARNING ${llvm_clean})
-message(WARNING ${llvm_libraries})
+string(REPLACE "E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\lib\\" "" llvm_clean ${llvm_clean})
+#message(NOTICE ${llvm_clean})
+#message(NOTICE ${llvm_libraries})
 target_link_options(dust PRIVATE "/MD")
 target_compile_options(dust PRIVATE "/MD")
 target_include_directories(dust PRIVATE ${LLVM_INCLUDE_DIRS})

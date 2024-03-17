@@ -6,7 +6,6 @@
 #include "parser/parser.h"
 
 
-
 namespace parser{
     using namespace minilog;
     
@@ -22,15 +21,16 @@ namespace parser{
             return BinOpPrecedence[curTok.tok];
         else return -1;
     }
+    
     uexpr MainLoop() {
         while (curTok.tok != lexer::EOF_TK) {
             if (curTok.tok == lexer::FN_TK) {
                 HandleFuncDef();
-            }else if(curTok.tok==lexer::EXTERN_TK){
+            } else if (curTok.tok == lexer::EXTERN_TK) {
                 HandleExtern();
-            }else if(curTok.tok==lexer::SEMICON_TK){
+            } else if (curTok.tok == lexer::SEMICON_TK) {
                 getNextToken();
-            }else{
+            } else {
                 HandleTopLevelExpr();
             }
         }
@@ -123,14 +123,14 @@ namespace parser{
     uexpr parseBinOpExpression(int exprPrec, uexpr lhs) {
         while (true) {
             int tokPrec = getTokPrecedence();
-            minilog::log_debug("tok {} precedence: {}",lexer::to_string(curTok.tok),tokPrec);
+            minilog::log_debug("tok {} precedence: {}", lexer::to_string(curTok.tok), tokPrec);
             if (tokPrec < exprPrec) {
                 return lhs;
             }
             auto op = curTok;
             getNextToken();//pass bin op
             auto rhs = parsePrimary();
-            if(!rhs){
+            if (!rhs) {
                 return nullptr;
             }
             int nextPrec = getTokPrecedence();
