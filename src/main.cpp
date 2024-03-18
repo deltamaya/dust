@@ -12,6 +12,7 @@ std::map<lexer::TokenId, int> BinOpPrecedence{
         {lexer::SUB_TK, 10},
         {lexer::MUL_TK, 20},
         {lexer::DIV_TK, 20},
+        {lexer::LESS_TK,5},
 };
 
 std::function<void()> passToken;
@@ -43,7 +44,6 @@ int main(int argc, char **argv) {
                 std::cout << tk.val << std::endl;
             }
         }
-        parser::TheJIT = DustJIT::Create();
         parser::InitModuleAndManagers();
         parser::MainLoop();
         std::string outputName;
@@ -75,7 +75,6 @@ int main(int argc, char **argv) {
         llvm::InitializeNativeTargetAsmParser();
         parser::TheJIT = DustJIT::Create();
         parser::InitModuleAndManagers();
-        getToken();
         parser::Interpret();
     }
 

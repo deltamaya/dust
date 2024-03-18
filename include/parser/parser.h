@@ -50,7 +50,8 @@ namespace parser{
     std::unique_ptr<FunctionAST> parseTopLevelExpr();
     
     std::unique_ptr<PrototypeAST> parseExtern();
-    
+    std::unique_ptr<ExprAST> parseIfExpr();
+    std::unique_ptr<ExprAST> parseForExpr();
     uexpr MainLoop();
     
     void InterpretFuncDef();
@@ -58,6 +59,8 @@ namespace parser{
     void InterpretTopLevelExpr();
     
     void InterpretExtern();
+    void InterpretIfExpr();
+    void InterpretForExpr();
     void CompileFuncDef();
     void CompileTopLevelExpr();
     void CompileExtern();

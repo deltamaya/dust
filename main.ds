@@ -1,7 +1,19 @@
 extern putchard(ch)
-fn calc(x,y){
-    (x+y)/2
+extern printd(d)
+fn foo(){
+    for i=0;i<10{
+        if i<5{
+            putchard(120+i)
+        }else{
+            printd(i)
+        }
+    }
+}
+fn fib(v){
+    if v<3{
+        1
+    }else{
+        fib(v-1)+fib(v-2)
+    }
 }
 
-calc(12,4)
-putchard(120)

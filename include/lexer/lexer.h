@@ -45,9 +45,9 @@ f(EOF_TK)           \
     f(NUMLIT_TK)        \
 f(SEMICON_TK)            \
     f(STR_TK)            \
-    f(EXTERN_TK)
-    
-    
+    f(EXTERN_TK)         \
+    f(FOR_TK)            \
+    f(ASSIGN_TK)
     
     enum TokenId {
 #define _Function(name) name,

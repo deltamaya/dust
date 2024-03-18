@@ -10,10 +10,7 @@ namespace parser{
     using namespace minilog;
     
     bool isBinOperator(const lexer::Token &tk) {
-        return tk.tok == lexer::ADD_TK ||
-               tk.tok == lexer::SUB_TK ||
-               tk.tok == lexer::MUL_TK ||
-               tk.tok == lexer::DIV_TK;
+        return BinOpPrecedence.contains(tk.tok);
     }
     
     int getTokPrecedence() {
@@ -109,6 +106,10 @@ namespace parser{
             return parseStringExpr();
         } else if (getToken().tok == lexer::LPAR_TK) {
             return parseParenthesisExpr();
+        }else if (getToken().tok == lexer::IF_TK) {
+            return parseIfExpr();
+        }else if (getToken().tok == lexer::FOR_TK) {
+            return parseForExpr();
         }
         return nullptr;
     }
@@ -215,6 +216,44 @@ namespace parser{
         return std::make_unique<FunctionAST>(std::move(signature), std::move(def));
     }
     
+    std::unique_ptr<ExprAST> parseIfExpr(){
+        passToken();//pass if
+        auto Cond=parseExpression();
+        if(!Cond)return nullptr;
+        passToken();//pass {
+        auto Then=parseExpression();
+        passToken();//pass }
+        if(getToken().tok!=lexer::ELSE_TK){
+            minilog::log_error("expect else");
+            std::exit(1);
+        }
+        passToken();//pass else
+        passToken();//pass {
+        auto Else=parseExpression();
+        passToken();//pass }
+        return std::make_unique<IfExprAST>(std::move(Cond),std::move(Then),std::move(Else));
+    }
+    
+    std::unique_ptr<ExprAST>parseForExpr(){
+        passToken();//pass for
+        std::string varName=getToken().val;
+        passToken();
+        passToken();//pass =
+        auto Start=parseExpression();
+        passToken();//pass ;
+        auto End=parseExpression();
+        uexpr Step;
+        if(getToken().tok==lexer::SEMICON_TK){
+            passToken();//pass ;
+            Step=parseExpression();
+            if(!Step)return nullptr;
+        }
+        passToken();//pass {
+        auto Body=parseExpression();
+        passToken();//pass }
+        return std::make_unique<ForExprAST>(varName,std::move(Start),std::move(End),std::move(Step),std::move(Body));
+    }
+    
     int Interpret(){
         while(getToken().tok!=lexer::EOF_TK){
             if (getToken().tok == lexer::FN_TK) {
@@ -223,7 +262,7 @@ namespace parser{
                 InterpretExtern();
             } else if (getToken().tok == lexer::SEMICON_TK) {
                 passToken();
-            } else {
+            }else {
                 InterpretTopLevelExpr();
             }
         }

@@ -51,6 +51,8 @@ namespace lexer{
             return {ELSE_TK, ""};
         } else if (str == "extern") {
             return {EXTERN_TK, ""};
+        } else if (str == "for") {
+            return {FOR_TK, ""};
         } else if (str == "(") {
             return {LPAR_TK, ""};
         } else if (str == ")") {
@@ -103,6 +105,8 @@ namespace lexer{
             return {NOTEQ_TK, ""};
         } else if (str == "!") {
             return {NOT_TK, ""};
+        }else if (str == "=") {
+            return {ASSIGN_TK, ""};
         } else if (isString(str)) {
             std::string literal = str.substr(1, str.size() - 2);
             return {STR_TK, literal};
@@ -115,12 +119,11 @@ namespace lexer{
             std::exit(-1);
         }
     }
-    
-    std::vector<Token>lexLine(const std::string &line){
+    template<typename Input>requires requires(Input i){i.get();i.peek();}
+    std::vector<Token> lexGeneric(Input&source){
         std::vector<Token> ret;
         char ch;
         std::string buf;
-        std::stringstream source{line};
         auto lexBuf = [&] {
             ret.push_back(lexString(buf));
             buf.clear();
@@ -160,8 +163,8 @@ namespace lexer{
                 buf += ch;
             } else {
                 //lex numbers such as floats or integers
-                buf += ch;
                 if (buf.empty()) {
+                    buf += ch;
                     bool hasdot = false;
                     while ((ch = source.peek()) != -1) {
                         if (std::isdigit(ch)) {
@@ -178,6 +181,8 @@ namespace lexer{
                             }
                         }
                     }
+                }else{
+                    buf += ch;
                 }
             }
         }
@@ -185,81 +190,17 @@ namespace lexer{
         if (!buf.empty()) {
             ret.push_back(lexString(buf));
         }
-
         return ret;
+    }
+    std::vector<Token>lexLine(const std::string &line){
+        std::stringstream source{line};
+        return lexGeneric(source);
     }
     
     std::vector<Token> lexFile(std::ifstream &source) {
-        std::vector<Token> ret;
-        char ch;
-        std::string buf;
-        auto lexBuf = [&] {
-            ret.push_back(lexString(buf));
-            buf.clear();
-        };
-        while ((ch = source.get()) != -1) {
-            if (!std::isalnum(ch)) {
-                if (!buf.empty()) {
-                    lexBuf();
-                }
-                if (std::isspace(ch)) {
-                    continue;
-                }
-                //lex string literals
-                buf += ch;
-                if (ch == '\"') {
-                    while ((ch = source.get()) != -1) {
-                        buf += ch;
-                        if (ch == '\"') {
-                            lexBuf();
-                            break;
-                        }
-                    }
-                    continue;
-                }
-                // check if it is operators, such as +=, <=, of just +, -, >
-                if (isOperator(ch) || ch == '!') {
-                    char next = source.peek();
-                    if (next == '=') {
-                        source.get();
-                        buf += next;
-                    }
-                    lexBuf();
-                } else if (isBound(ch)) {
-                    lexBuf();
-                }
-            } else if (std::isalpha(ch)) {
-                buf += ch;
-            } else {
-                //lex numbers such as floats or integers
-                buf += ch;
-                if (buf.empty()) {
-                    bool hasdot = false;
-                    while ((ch = source.peek()) != -1) {
-                        if (std::isdigit(ch)) {
-                            source.get();
-                            buf += ch;
-                        } else {
-                            if (ch == '.' && !hasdot) {
-                                buf += ch;
-                                source.get();
-                                hasdot = true;
-                            } else {
-                                lexBuf();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        if (!buf.empty()) {
-            ret.push_back(lexString(buf));
-        }
-        ret.push_back({EOF_TK, ""});
-        return ret;
+        return lexGeneric(source);
     }
     
+
 
 }
