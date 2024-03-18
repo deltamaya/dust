@@ -22,6 +22,7 @@ add_executable("dust" src/main.cpp
         lib/print.cc
         src/emitter/emitter.cc
         include/emitter/emitter.h
+        src/parser/utils.cc
 )
 
 execute_process(COMMAND E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\bin\\llvm-config.exe --libs all

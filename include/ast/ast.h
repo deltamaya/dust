@@ -58,7 +58,7 @@
 
 
 namespace parser::ast{
-    llvm::Function *getFunction(std::string const& Name);
+
     
     class ExprAST {
     public:
@@ -103,7 +103,7 @@ namespace parser::ast{
         std::string name;
     public:
         explicit VariableExprAST(std::string name) : name(std::move(name)) {}
-        
+        const std::string &getName() const { return name; }
         llvm::Value *codegen() override;
     };
     
@@ -162,6 +162,18 @@ namespace parser::ast{
                    std::unique_ptr<ExprAST> Body)
                 : VarName(VarName), Start(std::move(Start)), End(std::move(End)),
                   Step(std::move(Step)), Body(std::move(Body)) {}
+        
+        llvm::Value *codegen() override;
+    };
+    // VarExprAST - Expression class for var
+    class VarExprAST : public ExprAST {
+        std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
+        std::unique_ptr<ExprAST> Body;
+    
+    public:
+        VarExprAST(std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames,
+                   std::unique_ptr<ExprAST> Body)
+                : VarNames(std::move(VarNames)), Body(std::move(Body)) {}
         
         llvm::Value *codegen() override;
     };

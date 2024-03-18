@@ -13,6 +13,13 @@ std::map<lexer::TokenId, int> BinOpPrecedence{
         {lexer::MUL_TK, 20},
         {lexer::DIV_TK, 20},
         {lexer::LESS_TK,5},
+        {lexer::GREATER_TK,5},
+        {lexer::LESSEQ_TK,5},
+        {lexer::GREATEEQ_TK,5},
+        {lexer::EQ_TK,5},
+        {lexer::NOTEQ_TK,5},
+        {lexer::ASSIGN_TK,2},
+        
 };
 
 std::function<void()> passToken;
@@ -64,7 +71,7 @@ int main(int argc, char **argv) {
                 std::getline(std::cin,line);
                 tokens=lexer::lexLine(line);
                 tokIndex=0;
-                return tokens[0];
+                return getToken();
             }
         };
         passToken=[&]{

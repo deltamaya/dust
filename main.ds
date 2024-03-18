@@ -1,5 +1,7 @@
+# this is some comments
 extern putchard(ch)
 extern printd(d)
+extern scand()
 fn foo(){
     for i=0;i<10{
         if i<5{
@@ -15,5 +17,18 @@ fn fib(v){
     }else{
         fib(v-1)+fib(v-2)
     }
+}
+fn bar(val){
+    var a=fib(10);
+    var b=fib(15);
+    if a+val<100{
+        foo()
+    }else{
+        val/2
+    }
+}
+fn calcFib(){
+    var val=scand();
+    fib(val)
 }
 

@@ -110,6 +110,8 @@ namespace parser{
             return parseIfExpr();
         }else if (getToken().tok == lexer::FOR_TK) {
             return parseForExpr();
+        }else if (getToken().tok == lexer::VAR_TK) {
+            return parseVarExpr();
         }
         return nullptr;
     }
@@ -252,6 +254,53 @@ namespace parser{
         auto Body=parseExpression();
         passToken();//pass }
         return std::make_unique<ForExprAST>(varName,std::move(Start),std::move(End),std::move(Step),std::move(Body));
+    }
+    
+    std::unique_ptr<ExprAST> parseVarExpr(){
+        passToken();//pass var
+        std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
+        
+        // At least one variable name is required.
+        if (getToken().tok != lexer::IDENT_TK){
+            minilog::log_error("expect identifier");
+            return nullptr;
+        }
+        while (true) {
+            std::string Name = getToken().val;
+            passToken();  // pass identifier.
+            
+            // Read the optional initializer.
+            std::unique_ptr<ExprAST> Init;
+            if (getToken().tok == lexer::ASSIGN_TK) {
+                passToken(); // eat the '='.
+                
+                Init = parseExpression();
+                if (!Init) return nullptr;
+            }
+            
+            VarNames.emplace_back(Name, std::move(Init));
+            
+            // End of var list, exit loop.
+            if (getToken().tok   != lexer::COMMA_TK) break;
+            passToken(); // eat the ','.
+            
+            if (getToken().tok != lexer::IDENT_TK){
+                minilog::log_error("expect identifier");
+                return nullptr;
+            }
+            
+        }
+
+        if (getToken().tok != lexer::SEMICON_TK)
+            return nullptr;
+        passToken();  // eat ';'.
+        
+        auto Body = parseExpression();
+        if (!Body)
+            return nullptr;
+        
+        return std::make_unique<VarExprAST>(std::move(VarNames),
+                                            std::move(Body));
     }
     
     int Interpret(){

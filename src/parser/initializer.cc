@@ -10,7 +10,7 @@ namespace parser{
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;
     std::unique_ptr<llvm::Module> TheModule;
-    std::map<std::string, llvm::Value *> NamedValues;
+    std::map<std::string, llvm::AllocaInst *> NamedValues;
     std::unique_ptr<DustJIT> TheJIT;
     std::unique_ptr<llvm::FunctionPassManager> TheFPM;
     std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
@@ -51,6 +51,7 @@ namespace parser{
         TheFPM->addPass(llvm::GVNPass());
 // Simplify the control flow graph (deleting unreachable blocks, etc.).
         TheFPM->addPass(llvm::SimplifyCFGPass());// Register analysis passes used in these transform passes.
+
         llvm::PassBuilder PB;
         PB.registerModuleAnalyses(*TheMAM);
         PB.registerFunctionAnalyses(*TheFAM);

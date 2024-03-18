@@ -53,6 +53,8 @@ namespace lexer{
             return {EXTERN_TK, ""};
         } else if (str == "for") {
             return {FOR_TK, ""};
+        }else if (str == "var") {
+            return {VAR_TK, ""};
         } else if (str == "(") {
             return {LPAR_TK, ""};
         } else if (str == ")") {
@@ -132,6 +134,15 @@ namespace lexer{
             if (!std::isalnum(ch)) {
                 if (!buf.empty()) {
                     lexBuf();
+                }
+                if(ch=='#'){
+                    // comments
+                    while((ch = source.get()) != -1){
+                        if(ch=='\n'||ch=='\r'){
+                            break;
+                        }
+                    }
+                    continue;
                 }
                 if (std::isspace(ch)) {
                     continue;

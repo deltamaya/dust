@@ -3,16 +3,7 @@
 //
 #include "ast/ast.h"
 #include "parser/parser.h"
-
 namespace parser::ast{
-    /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
-/// the function.  This is used for mutable variables etc.
-    static llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
-                                                    llvm::StringRef VarName) {
-        llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(),
-                         TheFunction->getEntryBlock().begin());
-        return TmpB.CreateAlloca(llvm::Type::getDoubleTy(*TheContext), nullptr, VarName);
-    }
     
     llvm::Value *NumberExprAST::codegen() {
         return llvm::ConstantFP::get(*TheContext, llvm::APFloat(val));
@@ -27,16 +18,39 @@ namespace parser::ast{
     }
     
     llvm::Value *VariableExprAST::codegen() {
-        // Look this variable up in the function.
-        llvm::Value *V = NamedValues[name];
-        if (!V) {
-            minilog::log_error("Unknown variable name: {}", name);
+// Look this variable up in the function.
+        llvm::AllocaInst *A = NamedValues[name];
+        if (!A)
             return nullptr;
-        }
-        return V;
+        
+        // Load the value.
+        return Builder->CreateLoad(A->getAllocatedType(), A, name.c_str());
     }
     
     llvm::Value *BinaryExprAST::codegen() {
+        // Special case '=' because we don't want to emit the LHS as an expression.
+        if (op.tok == lexer::ASSIGN_TK) {
+            // Assignment requires the LHS to be an identifier.
+            // This assume we're building without RTTI because LLVM builds that way by
+            // default.  If you build LLVM with RTTI this can be changed to a
+            // dynamic_cast for automatic error checking.
+            auto *LHSE = dynamic_cast<VariableExprAST *>(lhs.get());
+            if (!LHSE)
+                return nullptr;
+            // Codegen the RHS.
+            llvm::Value *Val = rhs->codegen();
+            if (!Val)
+                return nullptr;
+            
+            // Look up the name.
+            llvm::Value *Variable = NamedValues[LHSE->getName()];
+            if (!Variable)
+                return nullptr;
+            
+            Builder->CreateStore(Val, Variable);
+            return Val;
+        }
+        
         llvm::Value *L = lhs->codegen();
         llvm::Value *R = rhs->codegen();
         if (!L || !R)
@@ -59,6 +73,7 @@ namespace parser::ast{
                 minilog::log_fatal("can not parse operator: {}",lexer::to_string(op.tok));
                 return nullptr;
         }
+
     }
     
     llvm::Value *CallExprAST::codegen() {
@@ -103,7 +118,7 @@ namespace parser::ast{
     }
     
     llvm::Function *FunctionAST::codegen() {
-// Transfer ownership of the prototype to the FunctionProtos map, but keep a
+        // Transfer ownership of the prototype to the FunctionProtos map, but keep a
         // reference to it for use below.
         auto &P = *Proto;
         FunctionProtos[Proto->getName()] = std::move(Proto);
@@ -117,16 +132,15 @@ namespace parser::ast{
         
         // Record the function arguments in the NamedValues map.
         NamedValues.clear();
-        for (auto &Arg: TheFunction->args())
-        {
-//            // Create an alloca for this variable.
-//            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName());
-//
-//            // Store the initial value into the alloca.
-//            Builder->CreateStore(&Arg, Alloca);
-//
+        for (auto &Arg : TheFunction->args()) {
+            // Create an alloca for this variable.
+            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
+            
+            // Store the initial value into the alloca.
+            Builder->CreateStore(&Arg, Alloca);
+            
             // Add arguments to variable symbol table.
-            NamedValues[std::string(Arg.getName())] = &Arg;
+            NamedValues[std::string(Arg.getName())] = Alloca;
         }
         
         if (llvm::Value *RetVal = Body->codegen()) {
@@ -144,6 +158,7 @@ namespace parser::ast{
         
         // Error reading body, remove function.
         TheFunction->eraseFromParent();
+        
         return nullptr;
     }
     llvm::Value* IfExprAST::codegen(){
@@ -198,36 +213,40 @@ namespace parser::ast{
     }
     
     llvm::Value *ForExprAST::codegen() {
+        llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
+        
+        // Create an alloca for the variable in the entry block.
+        llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+        
         // Emit the start code first, without 'variable' in scope.
         llvm::Value *StartVal = Start->codegen();
         if (!StartVal)
             return nullptr;
+        
+        // Store the value into the alloca.
+        Builder->CreateStore(StartVal, Alloca);
+        
         // Make the new basic block for the loop header, inserting after current
-// block.
-        llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock *PreheaderBB = Builder->GetInsertBlock();
-        llvm::BasicBlock *LoopBB =
-                llvm::BasicBlock::Create(*TheContext, "loop", TheFunction);
-
-// Insert an explicit fall through from the current block to the LoopBB.
+        // block.
+        llvm::BasicBlock *LoopBB = llvm::BasicBlock::Create(*TheContext, "loop", TheFunction);
+        
+        // Insert an explicit fall through from the current block to the LoopBB.
         Builder->CreateBr(LoopBB);
+        
         // Start insertion in LoopBB.
         Builder->SetInsertPoint(LoopBB);
-
-// Start the PHI node with an entry for Start.
-        llvm::PHINode *Variable = Builder->CreatePHI(llvm::Type::getDoubleTy(*TheContext),
-                                               2, VarName);
-        Variable->addIncoming(StartVal, PreheaderBB);
+        
         // Within the loop, the variable is defined equal to the PHI node.  If it
-// shadows an existing variable, we have to restore it, so save it now.
-        llvm::Value *OldVal = NamedValues[VarName];
-        NamedValues[VarName] = Variable;
-
-// Emit the body of the loop.  This, like any other expr, can change the
-// current BB.  Note that we ignore the value computed by the body, but don't
-// allow an error.
+        // shadows an existing variable, we have to restore it, so save it now.
+        llvm::AllocaInst *OldVal = NamedValues[VarName];
+        NamedValues[VarName] = Alloca;
+        
+        // Emit the body of the loop.  This, like any other expr, can change the
+        // current BB.  Note that we ignore the value computed by the body, but don't
+        // allow an error.
         if (!Body->codegen())
             return nullptr;
+        
         // Emit the step value.
         llvm::Value *StepVal = nullptr;
         if (Step) {
@@ -239,27 +258,31 @@ namespace parser::ast{
             StepVal = llvm::ConstantFP::get(*TheContext, llvm::APFloat(1.0));
         }
         
-        llvm::Value *NextVar = Builder->CreateFAdd(Variable, StepVal, "nextvar");
         // Compute the end condition.
-        llvm::Value *EndCond = End->codegen();
+        llvm:: Value *EndCond = End->codegen();
         if (!EndCond)
             return nullptr;
-
-// Convert condition to a bool by comparing non-equal to 0.0.
+        
+        // Reload, increment, and restore the alloca.  This handles the case where
+        // the body of the loop mutates the variable.
+        llvm::Value *CurVar =
+                Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
+        llvm::Value *NextVar = Builder->CreateFAdd(CurVar, StepVal, "nextvar");
+        Builder->CreateStore(NextVar, Alloca);
+        
+        // Convert condition to a bool by comparing non-equal to 0.0.
         EndCond = Builder->CreateFCmpONE(
-                EndCond, llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0)), "loopcond");
+                EndCond, llvm::ConstantFP::get(*TheContext,llvm::APFloat(0.0)), "loopcond");
+        
         // Create the "after loop" block and insert it.
-        llvm::BasicBlock *LoopEndBB = Builder->GetInsertBlock();
         llvm::BasicBlock *AfterBB =
                 llvm::BasicBlock::Create(*TheContext, "afterloop", TheFunction);
-
-// Insert the conditional branch into the end of LoopEndBB.
+        
+        // Insert the conditional branch into the end of LoopEndBB.
         Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
-
-// Any new code will be inserted in AfterBB.
+        
+        // Any new code will be inserted in AfterBB.
         Builder->SetInsertPoint(AfterBB);
-        // Add a new entry to the PHI node for the backedge.
-        Variable->addIncoming(NextVar, LoopEndBB);
         
         // Restore the unshadowed variable.
         if (OldVal)
@@ -271,20 +294,53 @@ namespace parser::ast{
         return llvm::Constant::getNullValue(llvm::Type::getDoubleTy(*TheContext));
     }
             
-    llvm::Function *getFunction(const std::string& Name) {
-        // First, see if the function has already been added to the current module.
-        if (auto *F = TheModule->getFunction(Name))
-            return F;
+
+    llvm::Value* VarExprAST::codegen(){
+        std::vector<llvm::AllocaInst *> OldBindings;
         
-        // If not, check whether we can codegen the declaration from some existing
-        // prototype.
-        auto FI = FunctionProtos.find(Name);
-        if (FI != FunctionProtos.end())
-            return FI->second->codegen();
+        llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
         
-        // If no existing prototype exists, return null.
-        return nullptr;
-    }
-    
+        // Register all variables and emit their initializer.
+        for (auto & i : VarNames) {
+            const std::string &VarName = i.first;
+            ExprAST *Init = i.second.get();
+            
+            // Emit the initializer before adding the variable to scope, this prevents
+            // the initializer from referencing the variable itself, and permits stuff
+            // like this:
+            //  var a = 1 in
+            //    var a = a in ...   # refers to outer 'a'.
+            llvm::Value *InitVal;
+            if (Init) {
+                InitVal = Init->codegen();
+                if (!InitVal)
+                    return nullptr;
+            } else { // If not specified, use 0.0.
+                InitVal = llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0));
+            }
+            
+            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+            Builder->CreateStore(InitVal, Alloca);
+            
+            // Remember the old variable binding so that we can restore the binding when
+            // we unrecurse.
+            OldBindings.push_back(NamedValues[VarName]);
+            
+            // Remember this binding.
+            NamedValues[VarName] = Alloca;
+        }
+        
+        // Codegen the body, now that all vars are in scope.
+        llvm::Value *BodyVal = Body->codegen();
+        if (!BodyVal)
+            return nullptr;
+        
+        // Pop all our variables from scope.
+        for (unsigned i = 0, e = VarNames.size(); i != e; ++i)
+            NamedValues[VarNames[i].first] = OldBindings[i];
+        
+        // Return the body computation.
+        return BodyVal;
+    };
     
 }
