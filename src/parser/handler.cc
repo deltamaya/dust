@@ -17,11 +17,14 @@ namespace parser{
                 fnIR->print(llvm::errs());
                 fprintf(stderr, "\n");
             }
+            ExitOnErr(TheJIT->addModule(
+                    ThreadSafeModule(std::move(TheModule), std::move(TheContext))));
+            InitModuleAndManagers();
             minilog::log_info("handle func def done");
             
         } else {
             minilog::log_info("error with func def");
-            getNextToken();//skip token for error recovery
+            passToken();//skip token for error recovery
         }
         
     }
@@ -54,7 +57,7 @@ namespace parser{
         } else {
             // Skip token for error recovery.
             minilog::log_info("error with top level expr");
-            getNextToken();
+            passToken();
         }
     }
     
@@ -70,7 +73,7 @@ namespace parser{
             minilog::log_info("handle extern done");
         } else {
             minilog::log_info("error with extern");
-            getNextToken();
+            passToken();
         }
     }
     
@@ -90,7 +93,7 @@ namespace parser{
             
         } else {
             minilog::log_info("error with func def");
-            getNextToken();//skip token for error recovery
+            passToken();//skip token for error recovery
         }
     }
     
@@ -122,7 +125,7 @@ namespace parser{
         } else {
             // Skip token for error recovery.
             minilog::log_info("error with top level expr");
-            getNextToken();
+            passToken();
         }
     }
     
@@ -138,7 +141,7 @@ namespace parser{
             minilog::log_info("handle extern done");
         } else {
             minilog::log_info("error with extern");
-            getNextToken();
+            passToken();
         }
     }
 }

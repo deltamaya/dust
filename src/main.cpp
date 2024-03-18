@@ -5,7 +5,7 @@
 #include "emitter/emitter.h"
 std::vector<lexer::Token> tokens;
 size_t tokIndex = 0;
-lexer::Token curTok;
+
 
 std::map<lexer::TokenId, int> BinOpPrecedence{
         {lexer::ADD_TK, 10},
@@ -13,28 +13,30 @@ std::map<lexer::TokenId, int> BinOpPrecedence{
         {lexer::MUL_TK, 20},
         {lexer::DIV_TK, 20},
 };
-std::function<void()> getNextToken;
 
+std::function<void()> passToken;
+std::function<lexer::Token()>getToken;
 
 int main(int argc, char **argv) {
 
 
     if(argc>1){
         // compile mode
-        getNextToken=[&]() {
-            tokIndex++;
-            if (tokIndex >= tokens.size()) {
-                curTok = {lexer::EOF_TK, ""};
-            } else {
-                curTok = tokens[tokIndex];
+        getToken=[&]{
+            if(tokIndex<tokens.size()){
+                return tokens[tokIndex];
+            }else{
+                return lexer::Token{lexer::EOF_TK,""};
             }
+        };
+        passToken=[&]{
+            tokIndex++;
         };
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
         llvm::InitializeNativeTargetAsmParser();
         std::ifstream source{argv[1]};
         tokens = lexer::lexFile(source);
-        curTok = tokens[0];
         for (auto &tk: tokens) {
             std::cout << lexer::to_string(tk.tok) << ' ';
             if (tk.tok == lexer::IDENT_TK || tk.tok == lexer::STR_TK) {
@@ -54,32 +56,26 @@ int main(int argc, char **argv) {
 
     }else{
         // interpret mode
-        getNextToken=[&]() {
-            static std::string line{};
-            static int index=0;
-            if(std::cin.eof()){
-                curTok={lexer::EOF_TK,""};
-                return;
-            }
-            if(index<tokens.size()){
-                curTok=tokens[index++];
+        getToken=[&]{
+            if(tokIndex<tokens.size()){
+                return tokens[tokIndex];
             }else{
+                std::string line;
                 std::getline(std::cin,line);
-                if(std::cin.eof()){
-                    curTok={lexer::EOF_TK,""};
-                    return;
-                }
                 tokens=lexer::lexLine(line);
-                index=0;
-                getNextToken();
+                tokIndex=0;
+                return tokens[0];
             }
+        };
+        passToken=[&]{
+            tokIndex++;
         };
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
         llvm::InitializeNativeTargetAsmParser();
         parser::TheJIT = DustJIT::Create();
         parser::InitModuleAndManagers();
-        getNextToken();
+        getToken();
         parser::Interpret();
     }
 

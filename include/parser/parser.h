@@ -12,11 +12,11 @@
 
 // these are defined in main.cc
 extern std::vector<lexer::Token> tokens;
-extern lexer::Token curTok;
 extern std::map<lexer::TokenId, int> BinOpPrecedence;
 extern size_t tokIndex ;
 
-extern std::function<void()> getNextToken;
+extern std::function<void()> passToken;
+extern std::function<lexer::Token()>getToken;
 
 namespace parser{
     using namespace parser::ast;
