@@ -2,7 +2,6 @@
 #include "lexer/lexer.h"
 #include <map>
 #include "parser/parser.h"
-#include "emitter/emitter.h"
 std::vector<lexer::Token> tokens;
 size_t tokIndex = 0;
 
@@ -26,10 +25,13 @@ std::function<void()> passToken;
 std::function<lexer::Token()>getToken;
 
 int main(int argc, char **argv) {
-
-
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+    parser::TheJIT = DustJIT::Create();
+    parser::InitModuleAndManagers();
     if(argc>1){
-        // compile mode
+        // file mode
         getToken=[&]{
             if(tokIndex<tokens.size()){
                 return tokens[tokIndex];
@@ -40,9 +42,7 @@ int main(int argc, char **argv) {
         passToken=[&]{
             tokIndex++;
         };
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-        llvm::InitializeNativeTargetAsmParser();
+
         std::ifstream source{argv[1]};
         tokens = lexer::lexFile(source);
         for (auto &tk: tokens) {
@@ -51,18 +51,10 @@ int main(int argc, char **argv) {
                 std::cout << tk.val << std::endl;
             }
         }
-        parser::InitModuleAndManagers();
-        parser::MainLoop();
-        std::string outputName;
-        if(argc>2){
-             outputName=argv[2];
-        }else{
-            outputName="a.out";
-        }
-        emitter::Emit(outputName);
 
+        parser::MainLoop();
     }else{
-        // interpret mode
+        // interact mode
         getToken=[&]{
             if(tokIndex<tokens.size()){
                 return tokens[tokIndex];
@@ -77,12 +69,9 @@ int main(int argc, char **argv) {
         passToken=[&]{
             tokIndex++;
         };
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-        llvm::InitializeNativeTargetAsmParser();
-        parser::TheJIT = DustJIT::Create();
-        parser::InitModuleAndManagers();
-        parser::Interpret();
+
+
+        parser::MainLoop();
     }
 
     

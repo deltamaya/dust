@@ -22,13 +22,13 @@ namespace parser{
     uexpr MainLoop() {
         while (getToken().tok != lexer::EOF_TK) {
             if (getToken().tok == lexer::FN_TK) {
-                CompileFuncDef();
+                InterpretFuncDef();
             } else if (getToken().tok == lexer::EXTERN_TK) {
-                CompileExtern();
+                InterpretExtern();
             } else if (getToken().tok == lexer::SEMICON_TK) {
                 passToken();
             } else {
-                CompileTopLevelExpr();
+                InterpretTopLevelExpr();
             }
         }
         return nullptr;
@@ -302,20 +302,6 @@ namespace parser{
         return std::make_unique<VarExprAST>(std::move(VarNames),
                                             std::move(Body));
     }
-    
-    int Interpret(){
-        while(getToken().tok!=lexer::EOF_TK){
-            if (getToken().tok == lexer::FN_TK) {
-                InterpretFuncDef();
-            } else if (getToken().tok == lexer::EXTERN_TK) {
-                InterpretExtern();
-            } else if (getToken().tok == lexer::SEMICON_TK) {
-                passToken();
-            }else {
-                InterpretTopLevelExpr();
-            }
-        }
-        return 0;
-    }
+
     
 }

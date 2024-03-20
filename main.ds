@@ -31,4 +31,5 @@ fn calcFib(){
     var val=scand();
     fib(val)
 }
-
+printd(fib(10));
+printd(calcFib());

@@ -62,11 +62,5 @@ namespace parser{
     void InterpretTopLevelExpr();
     
     void InterpretExtern();
-    void InterpretIfExpr();
-    void InterpretForExpr();
-    void CompileFuncDef();
-    void CompileTopLevelExpr();
-    void CompileExtern();
-    int Interpret();
 }
 #endif //DUST_PARSER_H

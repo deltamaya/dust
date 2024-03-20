@@ -20,8 +20,6 @@ add_executable("dust" src/main.cpp
         include/jit/dustjit.h
         src/ast/ast.cc
         lib/print.cc
-        src/emitter/emitter.cc
-        include/emitter/emitter.h
         src/parser/utils.cc
 )
 
@@ -31,7 +29,6 @@ string(STRIP ${llvm_libraries} llvm_clean)
 string(REPLACE "E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\lib\\" "" llvm_clean ${llvm_clean})
 #message(NOTICE ${llvm_clean})
 #message(NOTICE ${llvm_libraries})
-target_link_options(dust PRIVATE "/MD")
 target_compile_options(dust PRIVATE "/MD")
 target_include_directories(dust PRIVATE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(dust PRIVATE ${llvm_clean} Ws2_32.lib)
