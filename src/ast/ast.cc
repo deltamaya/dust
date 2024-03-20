@@ -31,7 +31,7 @@ namespace parser::ast{
         // Special case '=' because we don't want to emit the LHS as an expression.
         if (op.tok == lexer::ASSIGN_TK) {
             // Assignment requires the LHS to be an identifier.
-            // This assume we're building without RTTI because LLVM builds that way by
+            // This assumes we're building without RTTI because LLVM builds that way by
             // default.  If you build LLVM with RTTI this can be changed to a
             // dynamic_cast for automatic error checking.
             auto *LHSE = dynamic_cast<VariableExprAST *>(lhs.get());
@@ -66,9 +66,25 @@ namespace parser::ast{
             case lexer::DIV_TK:
                 return Builder->CreateFDiv(L, R, "divtmp");
             case lexer::LESS_TK:
+                // this function will return a integer, 1 if L < R, 0 for else
                 L = Builder->CreateFCmpULT(L, R, "cmptmp");
-                // Convert bool 0/1 to double 0.0 or 1.0
+                // Convert the bool returned by CreateFCmpULT to double 0.0 or 1.0
                 return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext), "booltmp");
+            case lexer::LESSEQ_TK:
+                L=Builder->CreateFCmpULE(L,R,"cmptmp");
+                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+            case lexer::GREATER_TK:
+                L=Builder->CreateFCmpUGT(L,R,"cmptmp");
+                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+            case lexer::GREATEEQ_TK:
+                L=Builder->CreateFCmpUGE(L,R,"cmptmp");
+                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+            case lexer::EQ_TK:
+                L=Builder->CreateFCmpUEQ(L,R,"cmptmp");
+                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+            case lexer::NOTEQ_TK:
+                L=Builder->CreateFCmpUNE(L,R,"cmptmp");
+                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
             default:
                 minilog::log_fatal("can not parse operator: {}",lexer::to_string(op.tok));
                 return nullptr;
@@ -101,16 +117,20 @@ namespace parser::ast{
     }
     
     llvm::Function *PrototypeAST::codegen() {
+        //this is function parameters
         // Make the function type:  double(double,double) etc.
         std::vector<llvm::Type *> Doubles(Args.size(),
                                           llvm::Type::getDoubleTy(*TheContext));
+        // get the type of function by get, double(double ...)
         llvm::FunctionType *FT =
                 llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
         
+        // create the function in the specific module
         llvm::Function *F =
                 llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
         // Set names for all arguments.
         unsigned Idx = 0;
+        // set function parameter name
         for (auto &Arg: F->args())
             Arg.setName(Args[Idx++]);
         minilog::log_info("add function declaration done: {}", Name);
