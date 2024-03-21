@@ -27,9 +27,22 @@ fn bar(val){
         val/2
     }
 }
+fn forZero(){
+    for i=0;i<0{
+        putchard(120)
+    }
+}
+fn forOne(){
+    for i=0;i<1{
+        putchard(120)
+    }
+}
+fn forFive(){
+    for i=0;i<5{
+        putchard(120)
+   }
+}
 fn calcFib(){
     var val=scand();
     fib(val)
 }
-printd(fib(10));
-printd(calcFib());
