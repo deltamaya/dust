@@ -5,44 +5,18 @@ extern scand()
 fn foo(){
     for i=0;i<10{
         if i<5{
-            putchard(120+i)
+            putchard(110+i)
         }else{
             printd(i)
         }
-    }
+    };
+    return 0;
 }
-fn fib(v){
-    if v<3{
-        1
+fn bar(a){
+    if a<3{
+        putchard(120)
     }else{
-        fib(v-1)+fib(v-2)
-    }
-}
-fn bar(val){
-    var a=fib(10);
-    var b=fib(15);
-    if a+val<100{
-        foo()
-    }else{
-        val/2
-    }
-}
-fn forZero(){
-    for i=0;i<0{
-        putchard(120)
-    }
-}
-fn forOne(){
-    for i=0;i<1{
-        putchard(120)
-    }
-}
-fn forFive(){
-    for i=0;i<5{
-        putchard(120)
-   }
-}
-fn calcFib(){
-    var val=scand();
-    fib(val)
+        putchard(121)
+    };
+    return if a<5{1}else {2};
 }

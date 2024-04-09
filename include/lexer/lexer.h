@@ -48,8 +48,8 @@ f(SEMICON_TK)            \
     f(EXTERN_TK)         \
     f(FOR_TK)            \
     f(ASSIGN_TK)         \
-    f(VAR_TK)
-    
+    f(VAR_TK)            \
+    f(RET_TK)
     
     
     enum TokenId {

@@ -8,7 +8,7 @@
 
 namespace parser{
     using namespace minilog;
-    
+    using namespace ast;
     bool isBinOperator(const lexer::Token &tk) {
         return BinOpPrecedence.contains(tk.tok);
     }
@@ -117,7 +117,6 @@ namespace parser{
     }
     
     uexpr parseExpression() {
-        
         auto l = parsePrimary();
         if (!l) { return nullptr; }
         return parseBinOpExpression(0, std::move(l));
@@ -148,11 +147,44 @@ namespace parser{
         }
     }
     
+    std::unique_ptr<ReturnStmtAST> parseReturnStmt(){
+        passToken();//pass return
+        auto retStmt= std::make_unique<ReturnStmtAST>(std::move(parseExpression()));
+        if(getToken().tok!=lexer::SEMICON_TK){
+            std::exit(3);
+        }
+        passToken();//pass ;
+        return retStmt;
+    }
+    std::unique_ptr<RegularStmtAST> parseRegularStmt(){
+        auto  reguStmt=std::make_unique<RegularStmtAST>(std::move(parseExpression()));
+        if(getToken().tok!=lexer::SEMICON_TK){
+            std::exit(3);
+        }
+        passToken();//pass ;
+        return reguStmt;
+    }
+    std::unique_ptr<StmtAST> parseStatement(){
+        if(getToken().tok==lexer::RET_TK){
+            return parseReturnStmt();
+        }
+        return parseRegularStmt();
+    }
+    
+    std::vector<std::unique_ptr<StmtAST>> parseCodeBlock(){
+        std::vector<std::unique_ptr<StmtAST>>stmts;
+        while(getToken().tok!=lexer::RBRACE_TK){
+            stmts.emplace_back(parseStatement());
+        }
+        return stmts;
+    }
+    
     std::unique_ptr<FunctionAST> parseTopLevelExpr() {
-        if (auto e = parseExpression()) {
+        if (auto e = parseRegularStmt()) {
             auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
-            passToken();//pass ;
-            return std::make_unique<FunctionAST>(std::move(proto), std::move(e));
+            std::vector<std::unique_ptr<StmtAST>>stmt;
+            stmt.emplace_back(std::make_unique<ReturnStmtAST>(std::move(e)));
+            return std::make_unique<FunctionAST>(std::move(proto), std::move(stmt));
         }
         return nullptr;
     }
@@ -208,7 +240,7 @@ namespace parser{
             std::exit(1);
         }
         passToken();//pass {
-        auto def = parseExpression();
+        auto def = parseCodeBlock();
         if (getToken().tok != lexer::RBRACE_TK) {
             log_fatal("fatal");
             std::exit(1);
@@ -281,7 +313,7 @@ namespace parser{
             VarNames.emplace_back(Name, std::move(Init));
             
             // End of var list, exit loop.
-            if (getToken().tok   != lexer::COMMA_TK) break;
+            if (getToken().tok != lexer::COMMA_TK) break;
             passToken(); // eat the ','.
             
             if (getToken().tok != lexer::IDENT_TK){
@@ -302,6 +334,6 @@ namespace parser{
         return std::make_unique<VarExprAST>(std::move(VarNames),
                                             std::move(Body));
     }
-
+    
     
 }

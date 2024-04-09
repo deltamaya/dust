@@ -5,7 +5,8 @@
 #ifndef DUST_PARSER_H
 #define DUST_PARSER_H
 
-#include "ast/ast.h"
+#include "ast/expr.h"
+#include "ast/stmt.h"
 #include "lexer/lexer.h"
 #include "utils/minilog.h"
 #include <map>

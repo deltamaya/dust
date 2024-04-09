@@ -3,7 +3,7 @@
 //
 
 #include "parser/parser.h"
-#include "ast/ast.h"
+#include "ast/expr.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 
 namespace parser{
@@ -19,6 +19,9 @@ namespace parser{
                 ExitOnErr(TheJIT->addModule(
                         ThreadSafeModule(std::move(TheModule), std::move(TheContext))));
                 InitModuleAndManagers();
+            }else{
+                minilog::log_fatal("handle func error");
+                std::exit(10);
             }
 
             minilog::log_info("handle func def done");

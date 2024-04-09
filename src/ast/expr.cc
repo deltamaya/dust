@@ -1,8 +1,9 @@
 //
 // Created by delta on 16/03/2024.
 //
-#include "ast/ast.h"
+#include "ast/expr.h"
 #include "parser/parser.h"
+
 namespace parser::ast{
     
     llvm::Value *NumberExprAST::codegen() {
@@ -11,14 +12,14 @@ namespace parser::ast{
     
     llvm::Value *StringExprAST::codegen() {
         // Look this variable up in the function.
-//    llvm::StringLiteral s(llvm::StringRef(val));
-//    if (!s)
-//        return nullptr;
+        //    llvm::StringLiteral s(llvm::StringRef(val));
+        //    if (!s)
+        //        return nullptr;
         return nullptr;
     }
     
     llvm::Value *VariableExprAST::codegen() {
-// Look this variable up in the function.
+        // Look this variable up in the function.
         llvm::AllocaInst *A = NamedValues[name];
         if (!A)
             return nullptr;
@@ -69,27 +70,32 @@ namespace parser::ast{
                 // this function will return a integer, 1 if L < R, 0 for else
                 L = Builder->CreateFCmpULT(L, R, "cmptmp");
                 // Convert the bool returned by CreateFCmpULT to double 0.0 or 1.0
-                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext), "booltmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             case lexer::LESSEQ_TK:
-                L=Builder->CreateFCmpULE(L,R,"cmptmp");
-                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+                L = Builder->CreateFCmpULE(L, R, "cmptmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             case lexer::GREATER_TK:
-                L=Builder->CreateFCmpUGT(L,R,"cmptmp");
-                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+                L = Builder->CreateFCmpUGT(L, R, "cmptmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             case lexer::GREATEEQ_TK:
-                L=Builder->CreateFCmpUGE(L,R,"cmptmp");
-                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+                L = Builder->CreateFCmpUGE(L, R, "cmptmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             case lexer::EQ_TK:
-                L=Builder->CreateFCmpUEQ(L,R,"cmptmp");
-                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+                L = Builder->CreateFCmpUEQ(L, R, "cmptmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             case lexer::NOTEQ_TK:
-                L=Builder->CreateFCmpUNE(L,R,"cmptmp");
-                return Builder->CreateUIToFP(L,llvm::Type::getDoubleTy(*TheContext),"booltmp");
+                L = Builder->CreateFCmpUNE(L, R, "cmptmp");
+                return Builder->CreateUIToFP(L, llvm::Type::getDoubleTy(*TheContext),
+                                             "booltmp");
             default:
-                minilog::log_fatal("can not parse operator: {}",lexer::to_string(op.tok));
+                minilog::log_fatal("can not parse operator: {}", lexer::to_string(op.tok));
                 return nullptr;
         }
-
     }
     
     llvm::Value *CallExprAST::codegen() {
@@ -117,17 +123,17 @@ namespace parser::ast{
     }
     
     llvm::Function *PrototypeAST::codegen() {
-        //this is function parameters
-        // Make the function type:  double(double,double) etc.
+        // this is function parameters
+        //  Make the function type:  double(double,double) etc.
         std::vector<llvm::Type *> Doubles(Args.size(),
                                           llvm::Type::getDoubleTy(*TheContext));
         // get the type of function by get, double(double ...)
-        llvm::FunctionType *FT =
-                llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
+        llvm::FunctionType *FT = llvm::FunctionType::get(
+                llvm::Type::getDoubleTy(*TheContext), Doubles, false);
         
         // create the function in the specific module
-        llvm::Function *F =
-                llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
+        llvm::Function *F = llvm::Function::Create(
+                FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
         // Set names for all arguments.
         unsigned Idx = 0;
         // set function parameter name
@@ -147,14 +153,16 @@ namespace parser::ast{
             return nullptr;
         
         // Create a new basic block to start insertion into.
-        llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
+        llvm::BasicBlock *BB =
+                llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
         Builder->SetInsertPoint(BB);
         
         // Record the function arguments in the NamedValues map.
         NamedValues.clear();
-        for (auto &Arg : TheFunction->args()) {
+        for (auto &Arg: TheFunction->args()) {
             // Create an alloca for this variable.
-            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
+            llvm::AllocaInst *Alloca =
+                    CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
             
             // Store the initial value into the alloca.
             Builder->CreateStore(&Arg, Alloca);
@@ -162,26 +170,26 @@ namespace parser::ast{
             // Add arguments to variable symbol table.
             NamedValues[std::string(Arg.getName())] = Alloca;
         }
-        
-        if (llvm::Value *RetVal = Body->codegen()) {
-            // Finish off the function.
-            Builder->CreateRet(RetVal);
-            
-            // Validate the generated code, checking for consistency.
-            verifyFunction(*TheFunction);
-            
-            // Run the optimizer on the function.
-            TheFPM->run(*TheFunction, *TheFAM);
-            
-            return TheFunction;
+        for(const auto&stmt:Body){
+            stmt->codegen();
         }
+
+        if(verifyFunction(*TheFunction)){
+            // Error reading body, remove function.
+            TheFunction->eraseFromParent();
+            minilog::log_fatal("function definition error");
+            std::exit(11);
+        };
         
-        // Error reading body, remove function.
-        TheFunction->eraseFromParent();
+        // Run the optimizer on the function.
+        TheFPM->run(*TheFunction, *TheFAM);
         
-        return nullptr;
+        return TheFunction;
+
+
     }
-    llvm::Value* IfExprAST::codegen(){
+    
+    llvm::Value *IfExprAST::codegen() {
         llvm::Value *CondV = Cond->codegen();
         if (!CondV)
             return nullptr;
@@ -190,10 +198,10 @@ namespace parser::ast{
         CondV = Builder->CreateFCmpONE(
                 CondV, llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0)), "ifcond");
         llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
-
-// Create blocks for the then and else cases.  Insert the 'then' block at the
-// end of the function.
-        llvm:: BasicBlock *ThenBB =
+        
+        // Create blocks for the then and else cases.  Insert the 'then' block at the
+        // end of the function.
+        llvm::BasicBlock *ThenBB =
                 llvm::BasicBlock::Create(*TheContext, "then", TheFunction);
         llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(*TheContext, "else");
         llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*TheContext, "ifcont");
@@ -207,7 +215,7 @@ namespace parser::ast{
             return nullptr;
         
         Builder->CreateBr(MergeBB);
-// Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+        // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
         ThenBB = Builder->GetInsertBlock();
         // Emit else block.
         TheFunction->insert(TheFunction->end(), ElseBB);
@@ -218,7 +226,7 @@ namespace parser::ast{
             return nullptr;
         
         Builder->CreateBr(MergeBB);
-// codegen of 'Else' can change the current block, update ElseBB for the PHI.
+        // codegen of 'Else' can change the current block, update ElseBB for the PHI.
         ElseBB = Builder->GetInsertBlock();
         // Emit merge block.
         TheFunction->insert(TheFunction->end(), MergeBB);
@@ -229,7 +237,6 @@ namespace parser::ast{
         PN->addIncoming(ThenV, ThenBB);
         PN->addIncoming(ElseV, ElseBB);
         return PN;
-    
     }
     
     llvm::Value *ForExprAST::codegen() {
@@ -246,112 +253,60 @@ namespace parser::ast{
         // Store the value into the alloca.
         Builder->CreateStore(StartVal, Alloca);
         llvm::AllocaInst *OldVal = NamedValues[VarName];
-        NamedValues[VarName]=Alloca;
-        llvm::Value*StepVal;
-        if(Step){
-            StepVal=Step->codegen();
-        }else{
-            StepVal=llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext),1.0);
+        NamedValues[VarName] = Alloca;
+        llvm::Value *StepVal;
+        if (Step) {
+            StepVal = Step->codegen();
+        } else {
+            StepVal = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext), 1.0);
         }
         // Make the new basic block for the loop header, inserting after current
         // block.
-        llvm::BasicBlock*CondBB=llvm::BasicBlock::Create(*TheContext,"cond",TheFunction);
-        llvm::BasicBlock *LoopBB = llvm::BasicBlock::Create(*TheContext, "loop", TheFunction);
-        llvm::BasicBlock*AfterBB=llvm::BasicBlock::Create(*TheContext,"afterloop",TheFunction);
+        llvm::BasicBlock *CondBB =
+                llvm::BasicBlock::Create(*TheContext, "cond", TheFunction);
+        llvm::BasicBlock *LoopBB =
+                llvm::BasicBlock::Create(*TheContext, "loop", TheFunction);
+        llvm::BasicBlock *AfterBB =
+                llvm::BasicBlock::Create(*TheContext, "afterloop", TheFunction);
         Builder->CreateBr(CondBB);
         Builder->SetInsertPoint(CondBB);
-        llvm::Value*CondVal=End->codegen();
-        CondVal=Builder->CreateFCmpONE(CondVal,llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext),llvm::APFloat(0.0)),"loopcond");
+        llvm::Value *CondVal = End->codegen();
+        CondVal = Builder->CreateFCmpONE(
+                CondVal,
+                llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext),
+                                      llvm::APFloat(0.0)),
+                "loopcond");
         
-        Builder->CreateCondBr(CondVal,LoopBB,AfterBB);
+        Builder->CreateCondBr(CondVal, LoopBB, AfterBB);
         
         Builder->SetInsertPoint(LoopBB);
         Body->codegen();
         
-        llvm::Value*CurVal=Builder->CreateLoad(Alloca->getAllocatedType(),Alloca,VarName.c_str());
-        CurVal=Builder->CreateFAdd(CurVal,StepVal,"nextval");
-        Builder->CreateStore(CurVal,Alloca);
+        llvm::Value *CurVal =
+                Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
+        CurVal = Builder->CreateFAdd(CurVal, StepVal, "nextval");
+        Builder->CreateStore(CurVal, Alloca);
+        // Insert the conditional branch into the end of LoopEndBB.
         Builder->CreateBr(CondBB);
+        // Any new code will be inserted in AfterBB.
         Builder->SetInsertPoint(AfterBB);
-        if(OldVal){
-            NamedValues[VarName]=OldVal;
-        }else{
+        // Restore the unshadowed variable.
+        if (OldVal) {
+            NamedValues[VarName] = OldVal;
+        } else {
             NamedValues.erase(VarName);
         }
-        return llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext),0.0);
-        
-//        // Insert an explicit fall through from the current block to the LoopBB.
-//        Builder->CreateBr(LoopBB);
-//
-//        // Start insertion in LoopBB.
-//        Builder->SetInsertPoint(LoopBB);
-//
-//        // Within the loop, the variable is defined equal to the PHI node.  If it
-//        // shadows an existing variable, we have to restore it, so save it now.
-//        llvm::AllocaInst *OldVal = NamedValues[VarName];
-//        NamedValues[VarName] = Alloca;
-//
-//        // Emit the body of the loop.  This, like any other expr, can change the
-//        // current BB.  Note that we ignore the value computed by the body, but don't
-//        // allow an error.
-//        if (!Body->codegen())
-//            return nullptr;
-//
-//        // Emit the step value.
-//        llvm::Value *StepVal = nullptr;
-//        if (Step) {
-//            StepVal = Step->codegen();
-//            if (!StepVal)
-//                return nullptr;
-//        } else {
-//            // If not specified, use 1.0.
-//            StepVal = llvm::ConstantFP::get(*TheContext, llvm::APFloat(1.0));
-//        }
-//
-//        // Compute the end condition.
-//        llvm:: Value *EndCond = End->codegen();
-//        if (!EndCond)
-//            return nullptr;
-//
-//        // Reload, increment, and restore the alloca.  This handles the case where
-//        // the body of the loop mutates the variable.
-//        llvm::Value *CurVar =
-//                Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
-//        llvm::Value *NextVar = Builder->CreateFAdd(CurVar, StepVal, "nextvar");
-//        Builder->CreateStore(NextVar, Alloca);
-//
-//        // Convert condition to a bool by comparing non-equal to 0.0.
-//        EndCond = Builder->CreateFCmpONE(
-//                EndCond, llvm::ConstantFP::get(*TheContext,llvm::APFloat(0.0)), "loopcond");
-//
-//        // Create the "after loop" block and insert it.
-//        llvm::BasicBlock *AfterBB =
-//                llvm::BasicBlock::Create(*TheContext, "afterloop", TheFunction);
-//
-//        // Insert the conditional branch into the end of LoopEndBB.
-//        Builder->CreateCondBr(EndCond, LoopBB, AfterBB);
-//
-//        // Any new code will be inserted in AfterBB.
-//        Builder->SetInsertPoint(AfterBB);
-//
-//        // Restore the unshadowed variable.
-//        if (OldVal)
-//            NamedValues[VarName] = OldVal;
-//        else
-//            NamedValues.erase(VarName);
-//
-//        // for expr always returns 0.0.
-//        return llvm::Constant::getNullValue(llvm::Type::getDoubleTy(*TheContext));
+        // for expr always returns 0.0.
+        return llvm::ConstantFP::get(llvm::Type::getDoubleTy(*TheContext), 0.0);
     }
-            
-
-    llvm::Value* VarExprAST::codegen(){
+    
+    llvm::Value *VarExprAST::codegen() {
         std::vector<llvm::AllocaInst *> OldBindings;
         
         llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
         
         // Register all variables and emit their initializer.
-        for (auto & i : VarNames) {
+        for (auto &i: VarNames) {
             const std::string &VarName = i.first;
             ExprAST *Init = i.second.get();
             
@@ -393,4 +348,4 @@ namespace parser::ast{
         return BodyVal;
     };
     
-}
+} // namespace parser::ast

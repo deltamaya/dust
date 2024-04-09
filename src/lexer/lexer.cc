@@ -53,6 +53,8 @@ namespace lexer{
             return {EXTERN_TK, ""};
         } else if (str == "for") {
             return {FOR_TK, ""};
+        }else if (str == "return") {
+            return {RET_TK, ""};
         }else if (str == "var") {
             return {VAR_TK, ""};
         } else if (str == "(") {

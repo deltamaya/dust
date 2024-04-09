@@ -2,8 +2,8 @@
 // Created by delta on 12/03/2024.
 //
 
-#ifndef DUST_AST_H
-#define DUST_AST_H
+#ifndef DUST_EXPR_H
+#define DUST_EXPR_H
 
 #include <string>
 #include <memory>
@@ -66,7 +66,7 @@ namespace parser::ast{
         
         virtual llvm::Value *codegen() = 0;
     };
-    
+    class StmtAST;
     class NumberExprAST : public ExprAST {
         double val;
     public:
@@ -103,7 +103,7 @@ namespace parser::ast{
         std::string name;
     public:
         explicit VariableExprAST(std::string name) : name(std::move(name)) {}
-        const std::string &getName() const { return name; }
+        [[nodiscard]] const std::string &getName() const { return name; }
         llvm::Value *codegen() override;
     };
     
@@ -130,14 +130,19 @@ namespace parser::ast{
         llvm::Value *codegen() override;
     };
     
+    class StmtAST{
+    public:
+        virtual ~StmtAST()=default;
+        virtual void codegen()=0;
+    };
     
     class FunctionAST : public ExprAST {
         std::unique_ptr<PrototypeAST> Proto;
-        std::unique_ptr<ExprAST> Body;
+        std::vector<std::unique_ptr<StmtAST>> Body;
     
     public:
         FunctionAST(std::unique_ptr<PrototypeAST> Proto,
-                    std::unique_ptr<ExprAST> Body)
+                    std::vector<std::unique_ptr<StmtAST>> Body)
                 : Proto(std::move(Proto)), Body(std::move(Body)) {}
         
         llvm::Function *codegen() override;
@@ -146,8 +151,8 @@ namespace parser::ast{
     class IfExprAST:public ExprAST{
         std::unique_ptr<ExprAST>Cond,Then,Else;
     public:
-        IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
-                std::unique_ptr<ExprAST> Else)
+        IfExprAST(std::unique_ptr<ExprAST> Cond,  std::unique_ptr<ExprAST> Then,
+                  std::unique_ptr<ExprAST> Else)
         : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else)) {}
         
         llvm::Value *codegen() override;
@@ -177,7 +182,24 @@ namespace parser::ast{
         
         llvm::Value *codegen() override;
     };
+    
+    
+    class RegularStmtAST:public StmtAST{
+    public:
+        explicit RegularStmtAST(std::unique_ptr<ExprAST>val):val(std::move(val)){}
+        std::unique_ptr<ExprAST> val;
+        void codegen()override;
+    };
+    class ReturnStmtAST:public StmtAST{
+    public:
+        explicit ReturnStmtAST(std::unique_ptr<ExprAST>ret):retVal(std::move(ret)){}
+        explicit ReturnStmtAST(std::unique_ptr<RegularStmtAST>reg):retVal(std::move(reg->val)){}
+        std::unique_ptr<ExprAST> retVal;
+        
+        void codegen()override;
+    };
+
 }
 
 
-#endif //DUST_AST_H
+#endif //DUST_EXPR_H

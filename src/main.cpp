@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
         parser::MainLoop();
     }else{
-        // interact mode
+        // interactive mode
         getToken=[&]{
             if(tokIndex<tokens.size()){
                 return tokens[tokIndex];
