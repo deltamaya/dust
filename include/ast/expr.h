@@ -58,7 +58,7 @@
 
 
 namespace parser::ast{
-
+    
     
     class ExprAST {
     public:
@@ -66,7 +66,9 @@ namespace parser::ast{
         
         virtual llvm::Value *codegen() = 0;
     };
+    
     class StmtAST;
+    
     class NumberExprAST : public ExprAST {
         double val;
     public:
@@ -103,7 +105,9 @@ namespace parser::ast{
         std::string name;
     public:
         explicit VariableExprAST(std::string name) : name(std::move(name)) {}
+        
         [[nodiscard]] const std::string &getName() const { return name; }
+        
         llvm::Value *codegen() override;
     };
     
@@ -130,10 +134,11 @@ namespace parser::ast{
         llvm::Value *codegen() override;
     };
     
-    class StmtAST{
+    class StmtAST {
     public:
-        virtual ~StmtAST()=default;
-        virtual void codegen()=0;
+        virtual ~StmtAST() = default;
+        
+        virtual void codegen() = 0;
     };
     
     class FunctionAST : public ExprAST {
@@ -148,16 +153,17 @@ namespace parser::ast{
         llvm::Function *codegen() override;
     };
     
-    class IfExprAST:public ExprAST{
-        std::unique_ptr<ExprAST>Cond,Then,Else;
+    class IfExprAST : public ExprAST {
+        std::unique_ptr<ExprAST> Cond, Then, Else;
     public:
-        IfExprAST(std::unique_ptr<ExprAST> Cond,  std::unique_ptr<ExprAST> Then,
+        IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then,
                   std::unique_ptr<ExprAST> Else)
-        : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else)) {}
+                : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else)) {}
         
         llvm::Value *codegen() override;
     };
-    class ForExprAST:public ExprAST{
+    
+    class ForExprAST : public ExprAST {
         std::string VarName;
         std::unique_ptr<ExprAST> Start, End, Step, Body;
     
@@ -170,6 +176,7 @@ namespace parser::ast{
         
         llvm::Value *codegen() override;
     };
+    
     // VarExprAST - Expression class for var
     class VarExprAST : public ExprAST {
         std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
@@ -184,21 +191,58 @@ namespace parser::ast{
     };
     
     
-    class RegularStmtAST:public StmtAST{
+    class RegularStmtAST : public StmtAST {
     public:
-        explicit RegularStmtAST(std::unique_ptr<ExprAST>val):val(std::move(val)){}
+        explicit RegularStmtAST(std::unique_ptr<ExprAST> val) : val(std::move(val)) {}
+        
         std::unique_ptr<ExprAST> val;
-        void codegen()override;
+        
+        void codegen() override;
     };
-    class ReturnStmtAST:public StmtAST{
+    class EmptyStmt:public StmtAST{
+        void codegen() override;
+    };
+    class ReturnStmtAST : public StmtAST {
     public:
-        explicit ReturnStmtAST(std::unique_ptr<ExprAST>ret):retVal(std::move(ret)){}
-        explicit ReturnStmtAST(std::unique_ptr<RegularStmtAST>reg):retVal(std::move(reg->val)){}
+        explicit ReturnStmtAST(std::unique_ptr<ExprAST> ret) : retVal(std::move(ret)){
+        
+        }
+        
+        explicit ReturnStmtAST(std::unique_ptr<RegularStmtAST> reg) : retVal(std::move(reg->val)) {}
+        
         std::unique_ptr<ExprAST> retVal;
         
-        void codegen()override;
+        void codegen() override;
     };
-
+    
+    class IfStmtAST : public StmtAST {
+    public:
+        IfStmtAST(std::unique_ptr<ExprAST> Cond, std::vector<std::unique_ptr<StmtAST>> Then,
+                  std::vector<std::unique_ptr<StmtAST>> Else) : Cond(std::move(Cond)), Then(std::move(Then)), Else
+                (std::move(Else)) {}
+        
+        std::unique_ptr<ExprAST> Cond;
+        std::vector<std::unique_ptr<StmtAST>> Then, Else;
+        
+        void codegen() override;
+    };
+    
+    class ForStmtAST : public StmtAST {
+    public:
+        ForStmtAST(const std::string&varname,std::unique_ptr<ExprAST> Init, std::unique_ptr<ExprAST> Cond,
+                   std::unique_ptr<ExprAST>
+                Then,
+                   std::vector<std::unique_ptr<StmtAST>> Body) : Init(std::move(Init)),Cond(std::move(Cond)),
+                                                                 Body(std::move(Body)),VarName(varname) {}
+        
+        std::unique_ptr<ExprAST> Init;
+        std::unique_ptr<ExprAST> Cond;
+        std::unique_ptr<ExprAST> Then;
+        std::vector<std::unique_ptr<StmtAST>> Body;
+        std::string VarName;
+        
+        void codegen() override;
+    };
 }
 
 

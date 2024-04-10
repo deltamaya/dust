@@ -25,8 +25,6 @@ namespace parser{
                 InterpretFuncDef();
             } else if (getToken().tok == lexer::EXTERN_TK) {
                 InterpretExtern();
-            } else if (getToken().tok == lexer::SEMICON_TK) {
-                passToken();
             } else {
                 InterpretTopLevelExpr();
             }
@@ -36,13 +34,15 @@ namespace parser{
     
     std::unique_ptr<PrototypeAST> parseExtern() {
         passToken();//pass extern
-        return parseFuncDecl();
+        auto ret= parseFuncDecl();
+        passToken();//pass ;
+        return ret;
     }
     
     uexpr parseNumberExpr() {
         auto ret = std::make_unique<NumberExprAST>(std::stod(getToken().val));
         passToken();
-        log_info("num literal expr");
+//        log_info("num literal expr");
         return ret;
     }
     
@@ -50,7 +50,7 @@ namespace parser{
         std::string name = getToken().val;
         passToken();//pass name
         if (getToken().tok != lexer::LPAR_TK) {
-            log_info("ident expr");
+//            log_info("ident expr");
             return std::make_unique<VariableExprAST>(name);
         }
         passToken();//pass (
@@ -71,7 +71,7 @@ namespace parser{
             passToken();//pass ,
         }
         passToken();//pass )
-        log_info("func call expr");
+//        log_info("func call expr");
         return std::make_unique<CallExprAST>(name, std::move(args));
     }
     
@@ -125,7 +125,7 @@ namespace parser{
     uexpr parseBinOpExpression(int exprPrec, uexpr lhs) {
         while (true) {
             int tokPrec = getTokPrecedence();
-            minilog::log_debug("tok {} precedence: {}", lexer::to_string(getToken().tok), tokPrec);
+//            minilog::log_debug("tok {} precedence: {}", lexer::to_string(getToken().tok), tokPrec);
             if (tokPrec < exprPrec) {
                 return lhs;
             }
@@ -164,11 +164,59 @@ namespace parser{
         passToken();//pass ;
         return reguStmt;
     }
+    std::vector<std::unique_ptr<StmtAST>> parseCodeBlock();
+    std::unique_ptr<IfStmtAST> parseIfStmt(){
+        passToken();//pass if
+        auto Cond=parseExpression();
+        if(!Cond)return nullptr;
+        passToken();//pass {
+        auto Then=parseCodeBlock();
+        passToken();//pass }
+        if(getToken().tok!=lexer::ELSE_TK){
+            minilog::log_error("expect else");
+            std::exit(1);
+        }
+        passToken();//pass else
+        passToken();//pass {
+        auto Else=parseCodeBlock();
+        passToken();//pass }
+        minilog::log_info("parsed if statement");
+        return std::make_unique<IfStmtAST>(std::move(Cond),std::move(Then),std::move(Else));
+    }
+    std::unique_ptr<ForStmtAST> parseForStmt(){
+        passToken();//pass for
+        std::string varName=getToken().val;
+        passToken();
+        passToken();//pass =
+        auto InitVal=parseExpression();
+        passToken();//pass ;
+        auto Cond=parseExpression();
+        uexpr Then;
+        if(getToken().tok==lexer::SEMICON_TK){
+            passToken();//pass ;
+            Then=parseExpression();
+            if(!Then)return nullptr;
+        }
+        passToken();//pass {
+        auto Body=parseCodeBlock();
+        passToken();//pass }
+        minilog::log_info("parsed for statement");
+        return std::make_unique<ForStmtAST>(varName,std::move(InitVal),std::move(Cond),std::move(Then),std::move(Body));
+    }
     std::unique_ptr<StmtAST> parseStatement(){
         if(getToken().tok==lexer::RET_TK){
             return parseReturnStmt();
+        }else if(getToken().tok==lexer::IF_TK){
+            return parseIfStmt();
+        }else if(getToken().tok==lexer::FOR_TK){
+            return parseForStmt();
+        }else if(getToken().tok==lexer::SEMICON_TK){
+            passToken();//pass empty statement
+            return std::make_unique<EmptyStmt>();
+        }else{
+            return parseRegularStmt();
         }
-        return parseRegularStmt();
+        
     }
     
     std::vector<std::unique_ptr<StmtAST>> parseCodeBlock(){
@@ -224,7 +272,7 @@ namespace parser{
             std::exit(1);
         }
         passToken();//pass )
-        minilog::log_info("parsed func decl");
+//        minilog::log_info("parsed func decl");
         return std::make_unique<PrototypeAST>(fnName, argNames);
     }
     
@@ -246,7 +294,7 @@ namespace parser{
             std::exit(1);
         }
         passToken();//pass }
-        minilog::log_info("parsed func def");
+//        minilog::log_info("parsed func def");
         return std::make_unique<FunctionAST>(std::move(signature), std::move(def));
     }
     

@@ -139,7 +139,7 @@ namespace parser::ast{
         // set function parameter name
         for (auto &Arg: F->args())
             Arg.setName(Args[Idx++]);
-        minilog::log_info("add function declaration done: {}", Name);
+//        minilog::log_info("add function declaration done: {}", Name);
         return F;
     }
     
@@ -177,9 +177,10 @@ namespace parser::ast{
         if(verifyFunction(*TheFunction)){
             // Error reading body, remove function.
             TheFunction->eraseFromParent();
-            minilog::log_fatal("function definition error");
-            std::exit(11);
-        };
+            minilog::log_error("function definition error");
+            std::fflush(stderr);
+            return nullptr;
+        }
         
         // Run the optimizer on the function.
         TheFPM->run(*TheFunction, *TheFAM);

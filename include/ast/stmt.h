@@ -12,13 +12,7 @@ namespace parser::ast{
     using namespace parser;
     
     
-//    class IfStmtAST:public StmtAST{
-//    public:
-//        IfStmtAST(std::unique_ptr<ExprAST>ret):retVal(std::move(ret)){}
-//        std::unique_ptr<ExprAST> retVal;
-//
-//        void codegen()override;
-//    };
+
     
 
 }

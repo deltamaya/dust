@@ -9,7 +9,7 @@
 namespace parser{
     
     void InterpretFuncDef() {
-        minilog::log_info("handle func def");
+//        minilog::log_info("handle func def");
         if (auto fnAST = parseFuncDef()) {
             
             if (auto *fnIR = fnAST->codegen()) {
@@ -24,10 +24,10 @@ namespace parser{
                 std::exit(10);
             }
 
-            minilog::log_info("handle func def done");
+//            minilog::log_info("handle func def done");
             
         } else {
-            minilog::log_info("error with func def");
+//            minilog::log_info("error with func def");
             passToken();//skip token for error recovery
         }
         
@@ -64,7 +64,7 @@ namespace parser{
             passToken();
         }
     }
-    
+
     void InterpretExtern() {
         minilog::log_info("handle extern");
         if (auto proto = parseExtern()) {
@@ -81,12 +81,6 @@ namespace parser{
         }
     }
     
-    void InterpretIfExpr(){
-    
-    }
-    void InterpretForExpr(){
-    
-    }
     
     void CompileFuncDef() {
         minilog::log_info("handle func def");
