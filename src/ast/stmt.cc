@@ -51,7 +51,7 @@ namespace parser::ast{
             }
         }
         // Ensure we have a terminator in ThenBB.
-        if (!ThenBB->getTerminator()) {
+        if (!Builder->GetInsertBlock()->getTerminator()) {
             Builder->CreateBr(MergeBB);
         }
         
@@ -66,7 +66,7 @@ namespace parser::ast{
             }
         }
         // Ensure we have a terminator in ElseBB.
-        if (!ElseBB->getTerminator()) {
+        if (!Builder->GetInsertBlock()->getTerminator()) {
             Builder->CreateBr(MergeBB);
         }
         
@@ -123,13 +123,20 @@ namespace parser::ast{
                 break;
             }
         }
+        if(!Builder->GetInsertBlock()->getTerminator()){
 
-        llvm::Value *CurVal =
-                Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
-        CurVal = Builder->CreateFAdd(CurVal, StepVal, "nextval");
-        Builder->CreateStore(CurVal, Alloca);
-        // Insert the conditional branch into the end of LoopEndBB.
-        Builder->CreateBr(CondBB);
+            llvm::Value *CurVal =
+                    Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
+            CurVal = Builder->CreateFAdd(CurVal, StepVal, "nextval");
+            Builder->CreateStore(CurVal, Alloca);
+            // Insert the conditional branch into the end of LoopEndBB.
+            Builder->CreateBr(CondBB);
+        }
+        TheFunction->insert(TheFunction->end(),LoopBB);
+
+
+        // Emit merge block.
+//        TheFunction->insert(TheFunction->end(),AfterBB);
         // Any new code will be inserted in AfterBB.
         Builder->SetInsertPoint(AfterBB);
         // Restore the unshadowed variable.
