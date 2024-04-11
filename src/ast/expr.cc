@@ -144,50 +144,47 @@ namespace parser::ast{
     }
     
     llvm::Function *FunctionAST::codegen() {
-        // Transfer ownership of the prototype to the FunctionProtos map, but keep a
-        // reference to it for use below.
         auto &P = *Proto;
         FunctionProtos[Proto->getName()] = std::move(Proto);
         llvm::Function *TheFunction = getFunction(P.getName());
         if (!TheFunction)
             return nullptr;
         
-        // Create a new basic block to start insertion into.
-        llvm::BasicBlock *BB =
+        llvm::BasicBlock *EntryBB =
                 llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
-        Builder->SetInsertPoint(BB);
+        Builder->SetInsertPoint(EntryBB);
         
-        // Record the function arguments in the NamedValues map.
         NamedValues.clear();
-        for (auto &Arg: TheFunction->args()) {
-            // Create an alloca for this variable.
+        for (auto &Arg : TheFunction->args()) {
             llvm::AllocaInst *Alloca =
                     CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
-            
-            // Store the initial value into the alloca.
             Builder->CreateStore(&Arg, Alloca);
-            
-            // Add arguments to variable symbol table.
             NamedValues[std::string(Arg.getName())] = Alloca;
         }
-        for(const auto&stmt:Body){
-            stmt->codegen();
+        
+        // Generate code for each statement in the function body
+        for (const auto &Stmt : Body) {
+            Stmt->codegen();
+            // Check if there's already a terminator instruction, if so, don't generate code for the remaining statements
+            if (Builder->GetInsertBlock()->getTerminator()) {
+                break;
+            }
         }
-
-        if(verifyFunction(*TheFunction)){
-            // Error reading body, remove function.
+        
+        if (!Builder->GetInsertBlock()->getTerminator()) {
+            // If no return statement is encountered, create a default return of void
+            Builder->CreateRetVoid();
+        }
+        
+        if (verifyFunction(*TheFunction)) {
             TheFunction->eraseFromParent();
             minilog::log_error("function definition error");
             std::fflush(stderr);
             return nullptr;
         }
         
-        // Run the optimizer on the function.
         TheFPM->run(*TheFunction, *TheFAM);
-        
         return TheFunction;
-
-
     }
     
     llvm::Value *IfExprAST::codegen() {

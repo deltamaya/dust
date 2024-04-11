@@ -172,16 +172,16 @@ namespace parser{
         passToken();//pass {
         auto Then=parseCodeBlock();
         passToken();//pass }
-        if(getToken().tok!=lexer::ELSE_TK){
-            minilog::log_error("expect else");
-            std::exit(1);
+        if(getToken().tok==lexer::ELSE_TK){
+            passToken();//pass else
+            passToken();//pass {
+            auto Else=parseCodeBlock();
+            passToken();//pass }
+            minilog::log_info("parsed if statement");
+            return std::make_unique<IfStmtAST>(std::move(Cond),std::move(Then),std::move(Else));
         }
-        passToken();//pass else
-        passToken();//pass {
-        auto Else=parseCodeBlock();
-        passToken();//pass }
-        minilog::log_info("parsed if statement");
-        return std::make_unique<IfStmtAST>(std::move(Cond),std::move(Then),std::move(Else));
+        return std::make_unique<IfStmtAST>(std::move(Cond),std::move(Then),std::vector<std::unique_ptr<StmtAST>>());
+       
     }
     std::unique_ptr<ForStmtAST> parseForStmt(){
         passToken();//pass for

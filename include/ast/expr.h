@@ -200,6 +200,7 @@ namespace parser::ast{
         void codegen() override;
     };
     class EmptyStmt:public StmtAST{
+    public:
         void codegen() override;
     };
     class ReturnStmtAST : public StmtAST {

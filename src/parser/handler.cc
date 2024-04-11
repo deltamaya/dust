@@ -66,7 +66,7 @@ namespace parser{
     }
 
     void InterpretExtern() {
-        minilog::log_info("handle extern");
+//        minilog::log_info("handle extern");
         if (auto proto = parseExtern()) {
             if (auto *protoIR = proto->codegen()) {
                 fprintf(stderr, "Read top-level expression:");
@@ -74,7 +74,7 @@ namespace parser{
                 fprintf(stderr, "\n");
                 FunctionProtos[proto->getName()] = std::move(proto);
             }
-            minilog::log_info("handle extern done");
+//            minilog::log_info("handle extern done");
         } else {
             minilog::log_info("error with extern");
             passToken();

@@ -8,12 +8,9 @@ namespace parser::ast{
     
     
     void ReturnStmtAST::codegen() {
-        auto func=Builder->GetInsertBlock()->getParent();
-        auto retBlock=llvm::BasicBlock::Create(*TheContext,"retBlock",func);
-        Builder->CreateBr(retBlock);
-        Builder->SetInsertPoint(retBlock);
+        // Generate code for the return value
         llvm::Value *RetVal = retVal->codegen();
-        // Finish off the function.
+        // Insert return instruction
         Builder->CreateRet(RetVal);
     }
     
@@ -35,33 +32,46 @@ namespace parser::ast{
                 CondV, llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0)), "ifcond");
         llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
         
-        // Create blocks for the then and else cases.  Insert the 'then' block at the
-        // end of the function.
+        // Create blocks for the then and else cases.
         llvm::BasicBlock *ThenBB =
                 llvm::BasicBlock::Create(*TheContext, "then", TheFunction);
         llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(*TheContext, "else");
-        llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*TheContext, "after if");
+        llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(*TheContext, "afterif");
         
+        // Create conditional branch based on the condition.
         Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+        
         // Emit then value.
         Builder->SetInsertPoint(ThenBB);
-        
         for (const auto &stmt: Then) {
             stmt->codegen();
+            // Check if there's already a terminator instruction, if so, don't generate code for the remaining statements.
+            if (Builder->GetInsertBlock()->getTerminator()) {
+                break;
+            }
+        }
+        // Ensure we have a terminator in ThenBB.
+        if (!ThenBB->getTerminator()) {
+            Builder->CreateBr(MergeBB);
         }
         
-        Builder->CreateBr(MergeBB);
         // Emit else block.
-        TheFunction->insert(TheFunction->end(), ElseBB);
+        TheFunction->insert(TheFunction->end(),ElseBB);
         Builder->SetInsertPoint(ElseBB);
-        
         for (const auto &stmt: Else) {
             stmt->codegen();
+            // Check if there's already a terminator instruction, if so, don't generate code for the remaining statements.
+            if (Builder->GetInsertBlock()->getTerminator()) {
+                break;
+            }
+        }
+        // Ensure we have a terminator in ElseBB.
+        if (!ElseBB->getTerminator()) {
+            Builder->CreateBr(MergeBB);
         }
         
-        Builder->CreateBr(MergeBB);
         // Emit merge block.
-        TheFunction->insert(TheFunction->end(), MergeBB);
+        TheFunction->insert(TheFunction->end(),MergeBB);
         Builder->SetInsertPoint(MergeBB);
     }
     
@@ -108,8 +118,12 @@ namespace parser::ast{
         Builder->SetInsertPoint(LoopBB);
         for (const auto &stmt: Body) {
             stmt->codegen();
+            // Check if there's already a terminator instruction, if so, don't generate code for the remaining statements.
+            if (Builder->GetInsertBlock()->getTerminator()) {
+                break;
+            }
         }
-        
+
         llvm::Value *CurVal =
                 Builder->CreateLoad(Alloca->getAllocatedType(), Alloca, VarName.c_str());
         CurVal = Builder->CreateFAdd(CurVal, StepVal, "nextval");
