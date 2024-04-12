@@ -50,7 +50,6 @@ namespace parser::ast{
                 break;
             }
         }
-        // Ensure we have a terminator in ThenBB.
         if (!Builder->GetInsertBlock()->getTerminator()) {
             Builder->CreateBr(MergeBB);
         }
@@ -132,11 +131,6 @@ namespace parser::ast{
             // Insert the conditional branch into the end of LoopEndBB.
             Builder->CreateBr(CondBB);
         }
-        TheFunction->insert(TheFunction->end(),LoopBB);
-
-
-        // Emit merge block.
-//        TheFunction->insert(TheFunction->end(),AfterBB);
         // Any new code will be inserted in AfterBB.
         Builder->SetInsertPoint(AfterBB);
         // Restore the unshadowed variable.
@@ -145,5 +139,52 @@ namespace parser::ast{
         } else {
             NamedValues.erase(VarName);
         }
+    }
+    void VarStmtAST::codegen() {
+        std::vector<llvm::AllocaInst *> OldBindings;
+        
+        llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* VarBB=llvm::BasicBlock::Create(*TheContext,"varBB",TheFunction);
+        Builder->CreateBr(VarBB);
+        Builder->SetInsertPoint(VarBB);
+        // Register all variables and emit their initializer.
+        for (const auto &i: vars) {
+            const std::string &VarName = i.first;
+            ExprAST *Init = i.second.get();
+            
+            // Emit the initializer before adding the variable to scope, this prevents
+            // the initializer from referencing the variable itself, and permits stuff
+            llvm::Value *InitVal;
+            if (Init) {
+                InitVal = Init->codegen();
+            } else { // If not specified, use 0.0.
+                InitVal = llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0));
+            }
+            
+            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+            Builder->CreateStore(InitVal, Alloca);
+            
+            // Remember the old variable binding so that we can restore the binding when
+            // we unrecurse.
+            OldBindings.push_back(NamedValues[VarName]);
+            
+            // Remember this binding.
+            NamedValues[VarName] = Alloca;
+        }
+        
+        // Codegen the body, now that all vars are in scope.
+        for(const auto&stmt:Body){
+            stmt->codegen();
+            if(Builder->GetInsertBlock()->getTerminator()){
+                break;
+            }
+        }
+//        if(!Builder->GetInsertBlock()->getTerminator()){
+//            Builder->CreateBr(AfterBB);
+//            Builder->SetInsertPoint(AfterBB);
+//        }
+        // Pop all our variables from scope.
+        for (unsigned i = 0, e = vars.size(); i != e; ++i)
+            NamedValues[vars[i].first] = OldBindings[i];
     }
 }

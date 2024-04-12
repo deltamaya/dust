@@ -108,10 +108,6 @@ namespace parser{
             return parseParenthesisExpr();
         }else if (getToken().tok == lexer::IF_TK) {
             return parseIfExpr();
-        }else if (getToken().tok == lexer::FOR_TK) {
-            return parseForExpr();
-        }else if (getToken().tok == lexer::VAR_TK) {
-            return parseVarExpr();
         }
         return nullptr;
     }
@@ -203,6 +199,7 @@ namespace parser{
         minilog::log_info("parsed for statement");
         return std::make_unique<ForStmtAST>(varName,std::move(InitVal),std::move(Cond),std::move(Then),std::move(Body));
     }
+    std::unique_ptr<VarStmtAST> parseVarStmt();
     std::unique_ptr<StmtAST> parseStatement(){
         if(getToken().tok==lexer::RET_TK){
             return parseReturnStmt();
@@ -210,6 +207,8 @@ namespace parser{
             return parseIfStmt();
         }else if(getToken().tok==lexer::FOR_TK){
             return parseForStmt();
+        }else if(getToken().tok==lexer::VAR_TK){
+            return parseVarStmt();
         }else if(getToken().tok==lexer::SEMICON_TK){
             passToken();//pass empty statement
             return std::make_unique<EmptyStmt>();
@@ -316,27 +315,9 @@ namespace parser{
         return std::make_unique<IfExprAST>(std::move(Cond),std::move(Then),std::move(Else));
     }
     
-    std::unique_ptr<ExprAST>parseForExpr(){
-        passToken();//pass for
-        std::string varName=getToken().val;
-        passToken();
-        passToken();//pass =
-        auto Start=parseExpression();
-        passToken();//pass ;
-        auto End=parseExpression();
-        uexpr Step;
-        if(getToken().tok==lexer::SEMICON_TK){
-            passToken();//pass ;
-            Step=parseExpression();
-            if(!Step)return nullptr;
-        }
-        passToken();//pass {
-        auto Body=parseExpression();
-        passToken();//pass }
-        return std::make_unique<ForExprAST>(varName,std::move(Start),std::move(End),std::move(Step),std::move(Body));
-    }
+
     
-    std::unique_ptr<ExprAST> parseVarExpr(){
+    std::unique_ptr<VarStmtAST> parseVarStmt(){
         passToken();//pass var
         std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
         
@@ -375,11 +356,9 @@ namespace parser{
             return nullptr;
         passToken();  // eat ';'.
         
-        auto Body = parseExpression();
-        if (!Body)
-            return nullptr;
+        auto Body = parseCodeBlock();
         
-        return std::make_unique<VarExprAST>(std::move(VarNames),
+        return std::make_unique<VarStmtAST>(std::move(VarNames),
                                             std::move(Body));
     }
     
