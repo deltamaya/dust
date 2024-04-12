@@ -4,7 +4,7 @@
 #include "ast/expr.h"
 #include "parser/parser.h"
 
-namespace parser{
+namespace dust::parser{
 // CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 // the function.  This is used for mutable variables etc.
     llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
@@ -29,4 +29,5 @@ namespace parser{
         // If no existing prototype exists, return null.
         return nullptr;
     }
+    
 } // namespace parser

@@ -5,7 +5,7 @@
 #include "ast/expr.h"
 #include "jit/dustjit.h"
 
-namespace parser{
+namespace dust::parser{
     using namespace ast;
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;

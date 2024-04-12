@@ -8,7 +8,8 @@
 #include <vector>
 #include<fstream>
 
-namespace lexer{
+namespace dust::lexer{
+
     #define _FOR_EACH(f) \
 f(EOF_TK)           \
     f(FN_TK)\
@@ -76,5 +77,8 @@ f(SEMICON_TK)            \
     
     std::vector<Token> lexFile(std::ifstream&);
     std::vector<Token>lexLine(const std::string &line);
+    // these are defined in lexer.cc
+    extern std::vector<Token> tokens;
+    extern size_t tokIndex ;
 }
 #endif //DUST_LEXER_H

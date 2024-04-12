@@ -10,17 +10,14 @@
 #include "lexer/lexer.h"
 #include "utils/minilog.h"
 #include <map>
+#include "ast/func.h"
+using namespace dust;
 
-// these are defined in main.cc
-extern std::vector<lexer::Token> tokens;
-extern std::map<lexer::TokenId, int> BinOpPrecedence;
-extern size_t tokIndex ;
 
-extern std::function<void()> passToken;
-extern std::function<lexer::Token()>getToken;
 
-namespace parser{
-    using namespace parser::ast;
+
+namespace dust::parser{
+    using namespace ast;
     using uexpr = std::unique_ptr<ast::ExprAST>;
     // these are defined in initializer.cc
     extern std::unique_ptr<llvm::LLVMContext> TheContext;
@@ -37,7 +34,10 @@ namespace parser{
     extern std::unique_ptr<llvm::StandardInstrumentations> TheSI;
     extern std::map<std::string, std::unique_ptr<ast::PrototypeAST>> FunctionProtos;
     extern llvm::ExitOnError ExitOnErr;
-    
+    //defined in parser.cc
+    extern std::map<lexer::TokenId, int> BinOpPrecedence;
+    extern std::function<void()> PassToken;
+    extern std::function<lexer::Token()>GetToken;
     void InitModuleAndManagers();
     llvm::Function *getFunction(std::string const& Name);
     llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
@@ -54,8 +54,11 @@ namespace parser{
     
     std::unique_ptr<PrototypeAST> parseExtern();
     std::unique_ptr<ExprAST> parseIfExpr();
-    std::unique_ptr<ExprAST> parseForExpr();
-    std::unique_ptr<ExprAST> parseVarExpr();
+    enum ParseMode{
+        Interactive=0,
+        File
+    };
+    void SetParseMode(ParseMode m);
     uexpr MainLoop();
     
     void InterpretFuncDef();

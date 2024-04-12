@@ -5,7 +5,9 @@
 #include "utils/minilog.h"
 #include <cctype>
 
-namespace lexer{
+namespace dust::lexer{
+    std::vector<Token> tokens;
+    size_t tokIndex = 0;
     bool isBound(char ch) {
         return ch == '(' || ch == ')' || ch == '[' || ch == ']' || ch == '{' || ch == '}' || ch == ',' || ch == ':' ||
                ch == ';';
@@ -123,8 +125,9 @@ namespace lexer{
             std::exit(-1);
         }
     }
-    template<typename Input>requires requires(Input i){i.get();i.peek();}
-    std::vector<Token> lexGeneric(Input&source){
+    
+    template<typename InputStream>requires requires(InputStream i){i.get();i.peek();}
+    std::vector<Token> lexGeneric(InputStream&source){
         std::vector<Token> ret;
         char ch;
         std::string buf;
@@ -205,6 +208,7 @@ namespace lexer{
         }
         return ret;
     }
+    
     std::vector<Token>lexLine(const std::string &line){
         std::stringstream source{line};
         return lexGeneric(source);

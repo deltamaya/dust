@@ -6,7 +6,7 @@
 #include "ast/expr.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
 
-namespace parser{
+namespace dust::parser{
     
     void InterpretFuncDef() {
 //        minilog::log_info("handle func def");
@@ -28,7 +28,7 @@ namespace parser{
             
         } else {
 //            minilog::log_info("error with func def");
-            passToken();//skip token for error recovery
+            PassToken();//skip token for error recovery
         }
         
     }
@@ -61,7 +61,7 @@ namespace parser{
         } else {
             // Skip token for error recovery.
             minilog::log_info("error with top level expr");
-            passToken();
+            PassToken();
         }
     }
 
@@ -77,7 +77,7 @@ namespace parser{
 //            minilog::log_info("handle extern done");
         } else {
             minilog::log_info("error with extern");
-            passToken();
+            PassToken();
         }
     }
     
@@ -95,7 +95,7 @@ namespace parser{
             
         } else {
             minilog::log_info("error with func def");
-            passToken();//skip token for error recovery
+            PassToken();//skip token for error recovery
         }
     }
     
@@ -106,7 +106,7 @@ namespace parser{
         } else {
             // Skip token for error recovery.
             minilog::log_info("error with top level expr");
-            passToken();
+            PassToken();
         }
     }
     
@@ -122,7 +122,7 @@ namespace parser{
             minilog::log_info("handle extern done");
         } else {
             minilog::log_info("error with extern");
-            passToken();
+            PassToken();
         }
     }
 }

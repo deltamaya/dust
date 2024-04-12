@@ -12,10 +12,11 @@
 #include <chrono>
 #include <filesystem>
 #include <format>
-using namespace std::string_view_literals;
 
 namespace minilog
 {
+    using namespace std::string_view_literals;
+    
 #define FOREACH_LEVEL(f) f(debug) \
     f(info)                       \
         f(warning)                \

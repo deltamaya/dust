@@ -23,6 +23,10 @@ add_executable("dust" src/main.cpp
         src/parser/utils.cc
         include/ast/stmt.h
         src/ast/stmt.cc
+        include/ast/func.h
+        src/ast/func.cc
+        src/code/gen.cc
+        include/code/gen.h
 )
 
 execute_process(COMMAND E:\\clang+llvm-18.1.0-x86_64-pc-windows-msvc\\bin\\llvm-config.exe --libs all

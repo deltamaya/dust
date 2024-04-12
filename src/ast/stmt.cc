@@ -4,9 +4,8 @@
 #include "ast/stmt.h"
 #include "parser/parser.h"
 
-namespace parser::ast{
-    
-    
+namespace dust::ast{
+    using namespace parser;
     void ReturnStmtAST::codegen() {
         // Generate code for the return value
         llvm::Value *RetVal = retVal->codegen();
@@ -140,6 +139,7 @@ namespace parser::ast{
             NamedValues.erase(VarName);
         }
     }
+    
     void VarStmtAST::codegen() {
         std::vector<llvm::AllocaInst *> OldBindings;
         

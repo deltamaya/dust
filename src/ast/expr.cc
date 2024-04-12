@@ -4,8 +4,8 @@
 #include "ast/expr.h"
 #include "parser/parser.h"
 
-namespace parser::ast{
-    
+namespace dust::ast{
+    using namespace parser;
     llvm::Value *NumberExprAST::codegen() {
         return llvm::ConstantFP::get(*TheContext, llvm::APFloat(val));
     }
@@ -32,9 +32,6 @@ namespace parser::ast{
         // Special case '=' because we don't want to emit the LHS as an expression.
         if (op.tok == lexer::ASSIGN_TK) {
             // Assignment requires the LHS to be an identifier.
-            // This assumes we're building without RTTI because LLVM builds that way by
-            // default.  If you build LLVM with RTTI this can be changed to a
-            // dynamic_cast for automatic error checking.
             auto *LHSE = dynamic_cast<VariableExprAST *>(lhs.get());
             if (!LHSE)
                 return nullptr;
@@ -143,49 +140,7 @@ namespace parser::ast{
         return F;
     }
     
-    llvm::Function *FunctionAST::codegen() {
-        auto &P = *Proto;
-        FunctionProtos[Proto->getName()] = std::move(Proto);
-        llvm::Function *TheFunction = getFunction(P.getName());
-        if (!TheFunction)
-            return nullptr;
-        
-        llvm::BasicBlock *EntryBB =
-                llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
-        Builder->SetInsertPoint(EntryBB);
-        
-        NamedValues.clear();
-        for (auto &Arg : TheFunction->args()) {
-            llvm::AllocaInst *Alloca =
-                    CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
-            Builder->CreateStore(&Arg, Alloca);
-            NamedValues[std::string(Arg.getName())] = Alloca;
-        }
-        
-        // Generate code for each statement in the function body
-        for (const auto &Stmt : Body) {
-            Stmt->codegen();
-            // Check if there's already a terminator instruction, if so, don't generate code for the remaining statements
-            if (Builder->GetInsertBlock()->getTerminator()) {
-                break;
-            }
-        }
-        
-        if (!Builder->GetInsertBlock()->getTerminator()) {
-            // If no return statement is encountered, create a default return of void
-            Builder->CreateRetVoid();
-        }
-        
-        if (verifyFunction(*TheFunction)) {
-            TheFunction->eraseFromParent();
-            minilog::log_error("function definition error");
-            std::fflush(stderr);
-            return nullptr;
-        }
-        
-        TheFPM->run(*TheFunction, *TheFAM);
-        return TheFunction;
-    }
+    
     
     llvm::Value *IfExprAST::codegen() {
         llvm::Value *CondV = Cond->codegen();
