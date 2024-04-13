@@ -45,12 +45,13 @@ f(EOF_TK)           \
     f(COMMA_TK)\
     f(NUMLIT_TK)        \
 f(SEMICON_TK)            \
-    f(STR_TK)            \
+    f(STRLIT_TK)            \
     f(EXTERN_TK)         \
     f(FOR_TK)            \
     f(ASSIGN_TK)         \
     f(VAR_TK)            \
-    f(RET_TK)
+    f(RET_TK)            \
+    f(STR_TK)
     
     
     enum TokenId {

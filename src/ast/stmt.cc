@@ -77,7 +77,7 @@ namespace dust::ast{
         llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
         
         // Create an alloca for the variable in the entry block.
-        llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+        llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction,getType(lexer::NUM_TK), VarName);
         
         // Emit the start code first, without 'variable' in scope.
         llvm::Value *StartVal = Init->codegen();
@@ -86,8 +86,8 @@ namespace dust::ast{
         
         // Store the value into the alloca.
         Builder->CreateStore(StartVal, Alloca);
-        llvm::AllocaInst *OldVal = NamedValues[VarName];
-        NamedValues[VarName] = Alloca;
+        llvm::AllocaInst *OldVal = NamedValues[VarName].first;
+        NamedValues[VarName] = {Alloca,getType(lexer::NUM_TK)};
         llvm::Value *StepVal;
         if (Then) {
             StepVal = Then->codegen();
@@ -134,14 +134,14 @@ namespace dust::ast{
         Builder->SetInsertPoint(AfterBB);
         // Restore the unshadowed variable.
         if (OldVal) {
-            NamedValues[VarName] = OldVal;
+            NamedValues[VarName] = {OldVal,getType(lexer::NUM_TK)};
         } else {
             NamedValues.erase(VarName);
         }
     }
     
     void VarStmtAST::codegen() {
-        std::vector<llvm::AllocaInst *> OldBindings;
+        std::vector<std::pair<llvm::AllocaInst *,llvm::Type*>> OldBindings;
         
         llvm::Function *TheFunction = Builder->GetInsertBlock()->getParent();
         llvm::BasicBlock* VarBB=llvm::BasicBlock::Create(*TheContext,"varBB",TheFunction);
@@ -149,8 +149,8 @@ namespace dust::ast{
         Builder->SetInsertPoint(VarBB);
         // Register all variables and emit their initializer.
         for (const auto &i: vars) {
-            const std::string &VarName = i.first;
-            ExprAST *Init = i.second.get();
+            const std::string &VarName =std::get<0>(i);
+            ExprAST *Init =std::get<1>(i).get();
             
             // Emit the initializer before adding the variable to scope, this prevents
             // the initializer from referencing the variable itself, and permits stuff
@@ -160,16 +160,16 @@ namespace dust::ast{
             } else { // If not specified, use 0.0.
                 InitVal = llvm::ConstantFP::get(*TheContext, llvm::APFloat(0.0));
             }
-            
-            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
+            llvm::Type* type=std::get<2>(i);
+            llvm::AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction,type, VarName);
             Builder->CreateStore(InitVal, Alloca);
             
             // Remember the old variable binding so that we can restore the binding when
             // we unrecurse.
-            OldBindings.push_back(NamedValues[VarName]);
+            OldBindings.emplace_back(NamedValues[VarName].first,type);
             
             // Remember this binding.
-            NamedValues[VarName] = Alloca;
+            NamedValues[VarName] = {Alloca,type};
         }
         
         // Codegen the body, now that all vars are in scope.
@@ -179,12 +179,8 @@ namespace dust::ast{
                 break;
             }
         }
-//        if(!Builder->GetInsertBlock()->getTerminator()){
-//            Builder->CreateBr(AfterBB);
-//            Builder->SetInsertPoint(AfterBB);
-//        }
         // Pop all our variables from scope.
         for (unsigned i = 0, e = vars.size(); i != e; ++i)
-            NamedValues[vars[i].first] = OldBindings[i];
+            NamedValues[std::get<0>(vars[i])] = OldBindings[i];
     }
 }

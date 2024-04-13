@@ -10,17 +10,17 @@ namespace dust::ast{
         return llvm::ConstantFP::get(*TheContext, llvm::APFloat(val));
     }
     
-    llvm::Value *StringExprAST::codegen() {
-        // Look this variable up in the function.
-        //    llvm::StringLiteral s(llvm::StringRef(val));
-        //    if (!s)
-        //        return nullptr;
-        return nullptr;
+    llvm::Value* StringExprAST::codegen() {
+//        minilog::log_debug("string literal in std::string : {}",str);
+        llvm::StringRef s{str};
+//        minilog::log_debug("string literal in llvm::StringRef: {}",s.str());
+        llvm::Value* stringPtr = Builder->CreateGlobalStringPtr(s, "string_literal");
+        return stringPtr;
     }
     
     llvm::Value *VariableExprAST::codegen() {
         // Look this variable up in the function.
-        llvm::AllocaInst *A = NamedValues[name];
+        llvm::AllocaInst *A = NamedValues[name].first;
         if (!A)
             return nullptr;
         
@@ -41,7 +41,7 @@ namespace dust::ast{
                 return nullptr;
             
             // Look up the name.
-            llvm::Value *Variable = NamedValues[LHSE->getName()];
+            llvm::Value *Variable = NamedValues[LHSE->getName()].first;
             if (!Variable)
                 return nullptr;
             
@@ -122,11 +122,15 @@ namespace dust::ast{
     llvm::Function *PrototypeAST::codegen() {
         // this is function parameters
         //  Make the function type:  double(double,double) etc.
-        std::vector<llvm::Type *> Doubles(Args.size(),
-                                          llvm::Type::getDoubleTy(*TheContext));
+        std::vector<llvm::Type *> types;
+        for(const auto&p:Args){
+            types.push_back(getType(p.second));
+        }
+        
         // get the type of function by get, double(double ...)
         llvm::FunctionType *FT = llvm::FunctionType::get(
-                llvm::Type::getDoubleTy(*TheContext), Doubles, false);
+                getType(RetType), types, false);
+        
         
         // create the function in the specific module
         llvm::Function *F = llvm::Function::Create(
@@ -135,7 +139,7 @@ namespace dust::ast{
         unsigned Idx = 0;
         // set function parameter name
         for (auto &Arg: F->args())
-            Arg.setName(Args[Idx++]);
+            Arg.setName(Args[Idx++].first);
 //        minilog::log_info("add function declaration done: {}", Name);
         return F;
     }

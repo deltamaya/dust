@@ -23,7 +23,7 @@ namespace dust::parser{
     extern std::unique_ptr<llvm::LLVMContext> TheContext;
     extern std::unique_ptr<llvm::IRBuilder<>> Builder;
     extern std::unique_ptr<llvm::Module> TheModule;
-    extern std::map<std::string, llvm::AllocaInst *> NamedValues;
+    extern std::map<std::string, std::pair<llvm::AllocaInst *,llvm::Type*>> NamedValues;
     extern std::unique_ptr<DustJIT> TheJIT;
     extern std::unique_ptr<llvm::FunctionPassManager> TheFPM;
     extern std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;
@@ -40,7 +40,8 @@ namespace dust::parser{
     extern std::function<lexer::Token()>GetToken;
     void InitModuleAndManagers();
     llvm::Function *getFunction(std::string const& Name);
-    llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
+    llvm::Type* getType(lexer::TokenId t);
+    llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,llvm::Type*,
                                              const std::string &VarName);
     uexpr parseExpression();
     

@@ -1,11 +1,16 @@
 # this is some comments
-extern putchard(ch);
-extern printd(d);
-extern scand();
-fn foo(){
+extern putchard(ch:num);
+extern scand():num;
+extern printd(d:num):num;
+extern prints(s:str):num;
+fn foo():num{
+    var s:str="hello world!",d:num=456;
+    prints(s);
+    printd(d);
     return 0;
 }
-fn bar(a){
+fn bar(a:num){
+    var s="world";
     if a<3{
         return 3;
     }else{
@@ -13,13 +18,13 @@ fn bar(a){
     }
     return a;
 }
-fn fooo(a){
+fn fooo(a:num):num{
     for i=0;i<10{
         return 1;
     }
     return a;
 }
-fn foobar(a){
+fn foobar(a:num):num{
     for i=0;i<10{
         if a+i==10{
             return i;
@@ -28,7 +33,7 @@ fn foobar(a){
     }
     return a;
 }
-fn barfoo(b){
+fn barfoo(b:num){
     var a=0;
     a=a+1;
     for i=0;i<5{
@@ -36,7 +41,7 @@ fn barfoo(b){
     }
     return a;
 }
-fn fib(n){
+fn fib(n:num){
     if n<3{
         return 1;
     }else{
@@ -44,13 +49,13 @@ fn fib(n){
     }
     return 0;
 }
-fn printFib(n){
+fn printFib(n:num):num{
     for i=1;i<=n{
         printd(fib(i));
     }
     return 0;
 }
-fn calc(a,b){
+fn calc(a:num,b:num){
     var f=fib(a);
     if f<b{
         var c=f;

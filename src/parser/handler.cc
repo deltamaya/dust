@@ -47,13 +47,13 @@ namespace dust::parser{
                 
                 // Search the JIT for the __anon_expr symbol.
                 auto ExprSymbol = ExitOnErr(TheJIT->lookup("__anon_expr"));
-//                assert(ExprSymbol);
                 
                 // Get the symbol's address and cast it to the right type (takes no
                 // arguments, returns a double) so we can call it as a native function.
-                double (*FP)() = ExprSymbol.getAddress().toPtr < double(*)
+                void (*FP)() = ExprSymbol.getAddress().toPtr < void(*)
                 () > ();
-                fprintf(stderr, "Evaluated to %f\n", FP());
+                FP();
+//                fprintf(stderr, "Evaluated to %f\n", FP());
                 
                 // Delete the anonymous expression module from the JIT.
                 ExitOnErr(RT->remove());

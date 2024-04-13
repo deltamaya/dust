@@ -59,6 +59,8 @@ namespace dust::lexer{
             return {RET_TK, ""};
         }else if (str == "var") {
             return {VAR_TK, ""};
+        }else if (str == "str") {
+            return {STR_TK, ""};
         } else if (str == "(") {
             return {LPAR_TK, ""};
         } else if (str == ")") {
@@ -115,7 +117,8 @@ namespace dust::lexer{
             return {ASSIGN_TK, ""};
         } else if (isString(str)) {
             std::string literal = str.substr(1, str.size() - 2);
-            return {STR_TK, literal};
+//            minilog::log_debug("lexer phase: {}",literal);
+            return {STRLIT_TK, literal};
         } else if (isIdent(str)) {
             return {IDENT_TK, str};
         } else if (isNumber(str)) {

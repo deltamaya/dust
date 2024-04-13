@@ -79,21 +79,23 @@ namespace dust::ast{
     
     
     class StringExprAST : public ExprAST {
-        std::string val;
+        std::string str;
     public:
-        explicit StringExprAST(std::string v) : val(std::move(v)) {}
+        explicit StringExprAST( std::string str) : str(std::move(str)){}
         
-        llvm::Value *codegen() override;
+        llvm::Value* codegen() override;
     };
     
     
     class PrototypeAST : public ExprAST {
         std::string Name;
-        std::vector<std::string> Args;
+        std::vector<std::pair<std::string,lexer::TokenId>> Args;
+        lexer::TokenId RetType;
     
     public:
-        PrototypeAST(std::string Name, std::vector<std::string> Args)
-                : Name(std::move(Name)), Args(std::move(Args)) {}
+        PrototypeAST(std::string Name, std::vector<std::pair<std::string,lexer::TokenId>> Args,lexer::TokenId
+        Ret=lexer::NUM_TK)
+                : Name(std::move(Name)), Args(std::move(Args)) ,RetType(Ret){}
         
         [[nodiscard]] std::string const &getName() { return Name; }
         

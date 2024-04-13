@@ -10,7 +10,7 @@ namespace dust::parser{
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;
     std::unique_ptr<llvm::Module> TheModule;
-    std::map<std::string, llvm::AllocaInst *> NamedValues;
+    std::map<std::string, std::pair<llvm::AllocaInst *,llvm::Type*>>  NamedValues;
     std::unique_ptr<DustJIT> TheJIT;
     std::unique_ptr<llvm::FunctionPassManager> TheFPM;
     std::unique_ptr<llvm::LoopAnalysisManager> TheLAM;

@@ -27,7 +27,12 @@ namespace dust::parser{
     std::function<void()> PassToken;
     std::function<lexer::Token()>GetToken;
     
-
+    void assertToken(lexer::TokenId expect){
+        if(GetToken().tok!=expect){
+            minilog::log_error("Expect {}, get {}",lexer::to_string(expect),lexer::to_string(GetToken().tok));
+            std::exit(112);
+        }
+    }
     void SetParseMode(ParseMode m){
         switch (m) {
             case Interactive:
@@ -117,14 +122,8 @@ namespace dust::parser{
                 args.push_back(std::move(Arg));
             else
                 return nullptr;
-            if (GetToken().tok != lexer::COMMA_TK) {
-                if (GetToken().tok == lexer::RPAR_TK) {
-                    break;
-                } else {
-                    minilog::log_fatal("expect , or )");
-                    std::exit(1);
-                }
-            }
+            if(GetToken().tok==lexer::RPAR_TK)break;
+            assertToken(lexer::COMMA_TK);
             PassToken();//pass ,
         }
         PassToken();//pass )
@@ -138,10 +137,7 @@ namespace dust::parser{
         if (!v) {
             return nullptr;
         }
-        if (GetToken().tok != lexer::RPAR_TK) {
-            minilog::log_fatal("can not parse parenthesis expression");
-            std::exit(-1);
-        }
+        assertToken(lexer::RPAR_TK);
         PassToken();//pass ')'
         log_info("() expr");
         return v;
@@ -150,7 +146,7 @@ namespace dust::parser{
     uexpr parseStringExpr() {
         auto v = std::make_unique<StringExprAST>(GetToken().val);
         PassToken();//pass string literal
-        log_info("string expr");
+//        log_info("string expr");
         return v;
     }
     
@@ -159,7 +155,7 @@ namespace dust::parser{
             return parseIdentifierExpr();
         } else if (GetToken().tok == lexer::NUMLIT_TK) {
             return parseNumberExpr();
-        } else if (GetToken().tok == lexer::STR_TK) {
+        } else if (GetToken().tok == lexer::STRLIT_TK) {
             return parseStringExpr();
         } else if (GetToken().tok == lexer::LPAR_TK) {
             return parseParenthesisExpr();
@@ -203,17 +199,13 @@ namespace dust::parser{
     std::unique_ptr<ReturnStmtAST> parseReturnStmt(){
         PassToken();//pass return
         auto retStmt= std::make_unique<ReturnStmtAST>(std::move(parseExpression()));
-        if(GetToken().tok != lexer::SEMICON_TK){
-            std::exit(3);
-        }
+        assertToken(lexer::SEMICON_TK);
         PassToken();//pass ;
         return retStmt;
     }
     std::unique_ptr<RegularStmtAST> parseRegularStmt(){
         auto  reguStmt=std::make_unique<RegularStmtAST>(std::move(parseExpression()));
-        if(GetToken().tok != lexer::SEMICON_TK){
-            std::exit(3);
-        }
+        assertToken(lexer::SEMICON_TK);
         PassToken();//pass ;
         return reguStmt;
     }
@@ -284,52 +276,48 @@ namespace dust::parser{
     }
     
     std::unique_ptr<FunctionAST> parseTopLevelExpr() {
-        if (auto e = parseRegularStmt()) {
-            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::string>());
+        if (auto e = parseStatement()) {
+            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::pair<std::string,
+                                                        lexer::TokenId>>());
             std::vector<std::unique_ptr<StmtAST>>stmt;
-            stmt.emplace_back(std::make_unique<ReturnStmtAST>(std::move(e)));
+            stmt.emplace_back(std::move(e));
+            stmt.emplace_back(std::make_unique<ReturnStmtAST>(std::make_unique<NumberExprAST>(0)));
             return std::make_unique<FunctionAST>(std::move(proto), std::move(stmt));
         }
         return nullptr;
     }
     
     std::unique_ptr<PrototypeAST> parseFuncDecl() {
-        
+        assertToken(lexer::IDENT_TK);
         std::string fnName = GetToken().val;
-        if (GetToken().tok != lexer::IDENT_TK) {
-            log_fatal("fatal");
-            std::exit(1);
-        }
         PassToken();//pass name
-        if (GetToken().tok != lexer::LPAR_TK) {
-            log_fatal("fatal");
-            std::exit(1);
-        }
+        assertToken(lexer::LPAR_TK);
         PassToken();//pass (
-        std::vector<std::string> argNames;
+        std::vector<std::pair<std::string,lexer::TokenId>> args;
         while (GetToken().tok != lexer::RPAR_TK) {
-            argNames.push_back(GetToken().val);
-            if (GetToken().tok != lexer::IDENT_TK) {
-                log_fatal("fatal");
-                std::exit(1);
-            }
-            PassToken();//pass arg name
+            const auto& name=GetToken().val;
+            PassToken();//pass parameter name
+            assertToken(lexer::COLON_TK);
+            PassToken();//pass colon
+            const auto type=GetToken().tok;
+            PassToken();//pass type
+            args.emplace_back(name,type);
             if (GetToken().tok == lexer::RPAR_TK) {
                 break;
             }
-            if (GetToken().tok != lexer::COMMA_TK) {
-                log_fatal("fatal");
-                std::exit(1);
-            }
+            assertToken(lexer::COMMA_TK);
             PassToken();//pass ,
         }
-        if (GetToken().tok != lexer::RPAR_TK) {
-            log_fatal("fatal");
-            std::exit(1);
-        }
+        assertToken(lexer::RPAR_TK);
         PassToken();//pass )
+        lexer::TokenId retType=lexer::NUM_TK;
+        if(GetToken().tok==lexer::COLON_TK){
+            PassToken();//pass :
+            retType=GetToken().tok;
+            PassToken();//pass type
+        }
 //        minilog::log_info("parsed func decl");
-        return std::make_unique<PrototypeAST>(fnName, argNames);
+        return std::make_unique<PrototypeAST>(fnName, args,retType);
     }
     
     std::unique_ptr<FunctionAST> parseFuncDef() {
@@ -361,10 +349,7 @@ namespace dust::parser{
         PassToken();//pass {
         auto Then=parseExpression();
         PassToken();//pass }
-        if(GetToken().tok != lexer::ELSE_TK){
-            minilog::log_error("expect else");
-            std::exit(1);
-        }
+        assertToken(lexer::ELSE_TK);
         PassToken();//pass else
         PassToken();//pass {
         auto Else=parseExpression();
@@ -376,7 +361,7 @@ namespace dust::parser{
     
     std::unique_ptr<VarStmtAST> parseVarStmt(){
         PassToken();//pass var
-        std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
+        std::vector<std::tuple<std::string, std::unique_ptr<ExprAST>,llvm::Type*>> vars;
         
         // At least one variable name is required.
         if (GetToken().tok != lexer::IDENT_TK){
@@ -386,7 +371,10 @@ namespace dust::parser{
         while (true) {
             std::string Name = GetToken().val;
             PassToken();  // pass identifier.
-            
+            assertToken(lexer::COLON_TK);
+            PassToken();//pass :
+            llvm::Type* type= getType(GetToken().tok);
+            PassToken();//pass type identifier
             // Read the optional initializer.
             std::unique_ptr<ExprAST> Init;
             if (GetToken().tok == lexer::ASSIGN_TK) {
@@ -396,7 +384,7 @@ namespace dust::parser{
                 if (!Init) return nullptr;
             }
             
-            VarNames.emplace_back(Name, std::move(Init));
+            vars.emplace_back(Name, std::move(Init),type);
             
             // End of var list, exit loop.
             if (GetToken().tok != lexer::COMMA_TK) break;
@@ -415,7 +403,7 @@ namespace dust::parser{
         
         auto Body = parseCodeBlock();
         
-        return std::make_unique<VarStmtAST>(std::move(VarNames),
+        return std::make_unique<VarStmtAST>(std::move(vars),
                                             std::move(Body));
     }
     

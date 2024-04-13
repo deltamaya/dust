@@ -20,9 +20,9 @@ namespace dust::ast{
         NamedValues.clear();
         for (auto &Arg: TheFunction->args()) {
             llvm::AllocaInst *Alloca =
-                    CreateEntryBlockAlloca(TheFunction, std::string{Arg.getName()});
+                    CreateEntryBlockAlloca(TheFunction,Arg.getType(), std::string{Arg.getName()});
             Builder->CreateStore(&Arg, Alloca);
-            NamedValues[std::string(Arg.getName())] = Alloca;
+            NamedValues[std::string(Arg.getName())] = {Alloca,Arg.getType()};
         }
         
         // Generate code for each statement in the function body
