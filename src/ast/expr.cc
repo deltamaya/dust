@@ -124,7 +124,7 @@ namespace dust::ast{
         //  Make the function type:  double(double,double) etc.
         std::vector<llvm::Type *> types;
         for(const auto&p:Args){
-            types.push_back(getType(p.second));
+            types.push_back(getType(p.typeId));
         }
         
         // get the type of function by get, double(double ...)
@@ -139,7 +139,7 @@ namespace dust::ast{
         unsigned Idx = 0;
         // set function parameter name
         for (auto &Arg: F->args())
-            Arg.setName(Args[Idx++].first);
+            Arg.setName(Args[Idx++].name);
 //        minilog::log_info("add function declaration done: {}", Name);
         return F;
     }

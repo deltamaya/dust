@@ -59,6 +59,10 @@
 
 namespace dust::ast{
     
+    struct Variable{
+        std::string name;
+        lexer::TokenId typeId;
+    };
     
     class ExprAST {
     public:
@@ -89,11 +93,11 @@ namespace dust::ast{
     
     class PrototypeAST : public ExprAST {
         std::string Name;
-        std::vector<std::pair<std::string,lexer::TokenId>> Args;
+        std::vector<Variable> Args;
         lexer::TokenId RetType;
     
     public:
-        PrototypeAST(std::string Name, std::vector<std::pair<std::string,lexer::TokenId>> Args,lexer::TokenId
+        PrototypeAST(std::string Name, std::vector<Variable> Args,lexer::TokenId
         Ret=lexer::NUM_TK)
                 : Name(std::move(Name)), Args(std::move(Args)) ,RetType(Ret){}
         

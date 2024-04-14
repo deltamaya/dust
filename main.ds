@@ -10,7 +10,7 @@ fn foo():num{
     return 0;
 }
 fn bar(a:num){
-    var s="world";
+    var s:str="world";
     if a<3{
         return 3;
     }else{
@@ -34,7 +34,7 @@ fn foobar(a:num):num{
     return a;
 }
 fn barfoo(b:num){
-    var a=0;
+    var a:num=0;
     a=a+1;
     for i=0;i<5{
         a=a+b;
@@ -55,15 +55,14 @@ fn printFib(n:num):num{
     }
     return 0;
 }
-fn calc(a:num,b:num){
-    var f=fib(a);
+fn calc(a:num,b:num):num{
+    var f:num=fib(a);
     if f<b{
-        var c=f;
+        var c:num=f;
         for i=0;i<f;1.0{
             printd(i);
         }
         return b;
     }
     return a;
-
 }

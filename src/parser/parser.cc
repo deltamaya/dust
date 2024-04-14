@@ -277,8 +277,7 @@ namespace dust::parser{
     
     std::unique_ptr<FunctionAST> parseTopLevelExpr() {
         if (auto e = parseStatement()) {
-            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<std::pair<std::string,
-                                                        lexer::TokenId>>());
+            auto proto = std::make_unique<PrototypeAST>("__anon_expr", std::vector<Variable>());
             std::vector<std::unique_ptr<StmtAST>>stmt;
             stmt.emplace_back(std::move(e));
             stmt.emplace_back(std::make_unique<ReturnStmtAST>(std::make_unique<NumberExprAST>(0)));
@@ -293,7 +292,7 @@ namespace dust::parser{
         PassToken();//pass name
         assertToken(lexer::LPAR_TK);
         PassToken();//pass (
-        std::vector<std::pair<std::string,lexer::TokenId>> args;
+        std::vector<Variable> args;
         while (GetToken().tok != lexer::RPAR_TK) {
             const auto& name=GetToken().val;
             PassToken();//pass parameter name
