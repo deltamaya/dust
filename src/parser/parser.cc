@@ -360,7 +360,7 @@ namespace dust::parser{
     
     std::unique_ptr<VarStmtAST> parseVarStmt(){
         PassToken();//pass var
-        std::vector<std::tuple<std::string, std::unique_ptr<ExprAST>,llvm::Type*>> vars;
+        std::vector<std::pair<Variable, std::unique_ptr<ExprAST>>> vars;
         
         // At least one variable name is required.
         if (GetToken().tok != lexer::IDENT_TK){
@@ -372,7 +372,7 @@ namespace dust::parser{
             PassToken();  // pass identifier.
             assertToken(lexer::COLON_TK);
             PassToken();//pass :
-            llvm::Type* type= getType(GetToken().tok);
+            auto type= GetToken().tok;
             PassToken();//pass type identifier
             // Read the optional initializer.
             std::unique_ptr<ExprAST> Init;
@@ -383,7 +383,7 @@ namespace dust::parser{
                 if (!Init) return nullptr;
             }
             
-            vars.emplace_back(Name, std::move(Init),type);
+            vars.emplace_back(Variable{Name, type}, std::move(Init));
             
             // End of var list, exit loop.
             if (GetToken().tok != lexer::COMMA_TK) break;

@@ -75,10 +75,10 @@ namespace dust::ast{
     
     class VarStmtAST : public StmtAST {
     public:
-        std::vector<std::tuple<std::string, std::unique_ptr<ExprAST>,llvm::Type*>> vars;
+        std::vector<std::pair<Variable,std::unique_ptr<ExprAST>>> vars;
         std::vector<std::unique_ptr<StmtAST>> Body;
         
-        VarStmtAST(std::vector<std::tuple<std::string, std::unique_ptr<ExprAST>,llvm::Type*>> vars,
+        VarStmtAST(std::vector<std::pair<Variable,std::unique_ptr<ExprAST>>> vars,
                    std::vector<std::unique_ptr<StmtAST>> Body) : vars
                                                                          (std::move(vars)), Body(std::move(Body)) {}
         
